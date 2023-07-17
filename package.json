@@ -1,0 +1,15 @@
+{
+  "name": "side-lib-api",
+  "version": "1.0.0",
+  "description": "A webservice that can be used to detect potential misconceptions in Python code",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Abigail Evans",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
