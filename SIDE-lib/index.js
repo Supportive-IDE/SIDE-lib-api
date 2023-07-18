@@ -746,6 +746,18 @@ var ExpressionNode = /*#__PURE__*/function (_TypeChangeObserverNo) {
     value: function checkForSymptoms() {
       this.checkRules(this);
     }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      return {
+        entity: _classPrivateFieldGet(this, _entity).name,
+        category: _classPrivateFieldGet(this, _category).name,
+        textValue: _classPrivateFieldGet(this, _textValue),
+        dataType: _classPrivateFieldGet(this, _dataType).name,
+        lineNumber: _classPrivateFieldGet(this, _startLineNumber),
+        docIndex: _classPrivateFieldGet(this, _documentStartIndex)
+      };
+    }
   }]);
 
   return ExpressionNode;
@@ -1566,6 +1578,19 @@ var FunctionDefinitionStatement = /*#__PURE__*/function (_CallableDefinitionSt) 
     key: "getFunctionNameExpression",
     value: function getFunctionNameExpression() {
       return this.getChildren()[1];
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(FunctionDefinitionStatement.prototype), "toJSON", this).call(this);
+
+      ret.functionName = this.getFunctionNameExpression().getTextValue();
+      ret.parameters = this.getParameters().map(function (pComponents) {
+        return pComponents.map(function (p) {
+          return p.toJSON();
+        });
+      });
+      return ret;
     } //#endregion - extension
 
   }]);
@@ -1918,6 +1943,19 @@ var FunctionCallNode = /*#__PURE__*/function (_MultiPartExpressionN2) {
       } finally {
         _iterator27.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(FunctionCallNode.prototype), "toJSON", this).call(this);
+
+      ret.functionName = this.getFunctionName();
+      ret.arguments = this.getArguments().map(function (aComponents) {
+        return aComponents.map(function (a) {
+          return a.toJSON();
+        });
+      });
+      return ret;
     } //#endregion - overrides
     //#region - custom
 
@@ -2535,6 +2573,20 @@ var MethodCallNode = /*#__PURE__*/function (_MultiPartExpressionN4) {
     key: "matchesPattern",
     value: function matchesPattern(node) {
       return _get(_getPrototypeOf(MethodCallNode.prototype), "matchesPattern", this).call(this, node) && this.getMethodName() === node.getMethodName();
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(MethodCallNode.prototype), "toJSON", this).call(this);
+
+      ret.methodName = this.getMethodName();
+      ret.arguments = this.getArguments().map(function (aComponents) {
+        return aComponents.map(function (a) {
+          return a.toJSON();
+        });
+      });
+      ret.object = this.getObject().toJSON();
+      return ret;
     } //#endregion - overrides
     //#region - custom
 
@@ -3090,6 +3142,15 @@ var PropertyCallNode = /*#__PURE__*/function (_MultiPartExpressionN5) {
     key: "matchesPattern",
     value: function matchesPattern(node) {
       return _get(_getPrototypeOf(PropertyCallNode.prototype), "matchesPattern", this).call(this, node) && this.getTextValue() === node.getTextValue();
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(PropertyCallNode.prototype), "toJSON", this).call(this);
+
+      ret.object = _classPrivateFieldGet(this, _object).toJSON();
+      ret.propertyName = _classPrivateFieldGet(this, _property).getTextValue();
+      return ret;
     } //#endregion - overrides
     //#region - custom
 
@@ -3563,6 +3624,18 @@ var FStringExpression = /*#__PURE__*/function (_MultiPartExpressionN6) {
       } finally {
         _iterator49.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(FStringExpression.prototype), "toJSON", this).call(this);
+
+      ret.values = _classPrivateFieldGet(this, _values).map(function (vArr) {
+        return vArr.map(function (v) {
+          return v.toJSON();
+        });
+      });
+      return ret;
     } //#endregion - overrides
     //#region - extensions
 
@@ -3913,6 +3986,14 @@ var ModuleExpression = /*#__PURE__*/function (_ExpressionNode5) {
     key: "matchesPattern",
     value: function matchesPattern(node) {
       return this.getEntity() === node.getEntity() === this.getTextValue() && node.getTextValue();
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ModuleExpression.prototype), "toJSON", this).call(this);
+
+      ret.moduleAlias = _classPrivateFieldGet(this, _moduleName);
+      return ret;
     }
   }]);
 
@@ -5636,6 +5717,31 @@ var CompoundTypeExpression = /*#__PURE__*/function (_MultiPartExpressionN8) {
     key: "matchesPattern",
     value: function matchesPattern(node) {
       return this.getEntity() === node.getEntity();
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(CompoundTypeExpression.prototype), "toJSON", this).call(this);
+
+      try {
+        // List, set, tuple
+        ret.elements = _classPrivateFieldGet(this, _elements).map(function (eComponent) {
+          return eComponent.map(function (e) {
+            return e.toJSON();
+          });
+        });
+      } catch (error) {
+        // Must be a dict
+        ret.elements = _classPrivateFieldGet(this, _elements).map(function (keyValue) {
+          return keyValue.map(function (entry) {
+            return entry.map(function (i) {
+              return i.toJSON();
+            });
+          });
+        });
+      }
+
+      return ret;
     } //#endregion - overrides
     //#region - extensions
 
@@ -5951,6 +6057,17 @@ var BlockDefinitionStatement = /*#__PURE__*/function (_MultiPartExpressionN9) {
       } finally {
         _iterator82.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(BlockDefinitionStatement.prototype), "toJSON", this).call(this);
+
+      ret.keyword = this.getChildren()[0].getTextValue();
+      ret.condition = _classPrivateFieldGet(this, _condition).map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     } //#endregion - overrides
 
   }, {
@@ -6172,6 +6289,19 @@ var AssignmentExpression = /*#__PURE__*/function (_MultiPartExpressionN10) {
       } finally {
         _iterator86.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(AssignmentExpression.prototype), "toJSON", this).call(this);
+
+      ret.targets = _classPrivateFieldGet(this, _variables).map(function (v) {
+        return v.toJSON();
+      });
+      ret.values = _classPrivateFieldGet(this, _values2).map(function (v) {
+        return v.toJSON();
+      });
+      return ret;
     } //#endregion - overrides
     //#region - extension
 
@@ -6668,6 +6798,16 @@ var ChangeExpression = /*#__PURE__*/function (_MultiPartExpressionN11) {
      * @returns {Symptom[]}
      */
 
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ChangeExpression.prototype), "toJSON", this).call(this);
+
+      ret.target = _classPrivateFieldGet(this, _variables2)[0].toJSON();
+      ret.operator = this.getChildren()[_classPrivateFieldGet(this, _operatorIndex)].toJSON();
+      ret.changeValue = _classPrivateFieldGet(this, _assignedValue).toJSON();
+      return ret;
+    }
   }]);
 
   return ChangeExpression;
@@ -7047,6 +7187,16 @@ var GroupElement = /*#__PURE__*/function (_MultiPartExpressionN12) {
       }
 
       return true;
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(GroupElement.prototype), "toJSON", this).call(this);
+
+      ret.contents = _classPrivateFieldGet(this, _contents).map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     } //#endregion - extension
 
     /**
@@ -7284,6 +7434,18 @@ var SliceElement = /*#__PURE__*/function (_MultiPartExpressionN13) {
       } finally {
         _iterator104.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(SliceElement.prototype), "toJSON", this).call(this);
+
+      ret.indices = _classPrivateFieldGet(this, _indices).map(function (iComponent) {
+        return iComponent.map(function (i) {
+          return i.toJSON();
+        });
+      });
+      return ret;
     } //#endregion - overrides
     //#region - extension
 
@@ -7463,6 +7625,16 @@ var IndexKeyElement = /*#__PURE__*/function (_MultiPartExpressionN14) {
       } finally {
         _iterator110.f();
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(IndexKeyElement.prototype), "toJSON", this).call(this);
+
+      ret.index = _classPrivateFieldGet(this, _contents2).map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     } //#endregion - overrides
 
   }]);
@@ -7554,6 +7726,24 @@ var SubscriptedElement = /*#__PURE__*/function (_MultiPartExpressionN15) {
      * Rule function. Checks if the property is unused
      * @param {SubscriptedElement} exp 
      * @returns {Symptom[]}
+     */
+
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(SubscriptedElement.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (c) {
+        return c.toJSON();
+      });
+      return ret;
+    } //#endregion - overrides
+    //#region - extensions
+
+    /**
+     * Works out the data type of this subscripted element
+     * @param {ExpressionNode[]} children 
+     * @returns {DataType}
      */
     //#endregion - extensions
 
@@ -7732,6 +7922,16 @@ var CalculatedExpression = /*#__PURE__*/function (_MultiPartExpressionN16) {
       return Array.from(variables.values()).filter(function (v) {
         return v === true;
       }).length > 0;
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(CalculatedExpression.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     } //#endregion - overrides
     //#region - extensions
 
@@ -8029,6 +8229,16 @@ var ComparisonExpression = /*#__PURE__*/function (_MultiPartExpressionN17) {
       return Array.from(variables.values()).filter(function (v) {
         return v === true;
       }).length > 0;
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ComparisonExpression.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     } //#endregion - overrides
     //#region - extensions
 
@@ -8281,6 +8491,16 @@ var BooleanExpression = /*#__PURE__*/function (_MultiPartExpressionN18) {
       return Array.from(variables.values()).filter(function (v) {
         return v === true;
       }).length > 0;
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(BooleanExpression.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     }
     /**
      * @override
@@ -8537,6 +8757,17 @@ var IteratorExpression = /*#__PURE__*/function (_MultiPartExpressionN19) {
       }
 
       _classPrivateFieldGet(this, _iterable).setBlockId(id);
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(IteratorExpression.prototype), "toJSON", this).call(this);
+
+      ret.loopVariables = _classPrivateFieldGet(this, _loopVariables).map(function (v) {
+        return v.toJSON();
+      });
+      ret.iterable = _classPrivateFieldGet(this, _iterable).toJSON();
+      return ret;
     } //#endregion - overrides
     //#region - extensions
 
@@ -8873,6 +9104,19 @@ var LambdaExpression = /*#__PURE__*/function (_MultiPartExpressionN20) {
 
       return variables;
     }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(LambdaExpression.prototype), "toJSON", this).call(this);
+
+      ret.arguments = _classPrivateFieldGet(this, _arguments3).map(function (argComp) {
+        return argComp.map(function (a) {
+          return a.toJSON();
+        });
+      });
+      ret["return"] = _classPrivateFieldGet(this, _return).toJSON();
+      return ret;
+    }
   }]);
 
   return LambdaExpression;
@@ -8929,6 +9173,16 @@ var TernaryExpression = /*#__PURE__*/function (_MultiPartExpressionN21) {
       if (localType !== this.getDataType()) {
         _get(_getPrototypeOf(TernaryExpression.prototype), "setDataType", this).call(this, localType);
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(TernaryExpression.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     }
   }]);
 
@@ -9054,6 +9308,16 @@ var ListComprehensionExpression = /*#__PURE__*/function (_MultiPartExpressionN22
       this.setTextValue("");
       this.setChildren([]);
       return copy;
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ListComprehensionExpression.prototype), "toJSON", this).call(this);
+
+      ret.nodes = this.getChildren().map(function (e) {
+        return e.toJSON();
+      });
+      return ret;
     }
   }]);
 
@@ -9188,6 +9452,16 @@ var ReturnStatement = /*#__PURE__*/function (_MultiPartExpressionN23) {
      * @returns {Symptom[]}
      */
 
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ReturnStatement.prototype), "toJSON", this).call(this);
+
+      ret.returnedValue = this.getReturnedValue().map(function (v) {
+        return v.toJSON();
+      });
+      return ret;
+    }
   }]);
 
   return ReturnStatement;
@@ -9324,7 +9598,19 @@ var ImportStatement = /*#__PURE__*/function (_MultiPartExpressionN24) {
     return _this35;
   }
 
-  return _createClass(ImportStatement);
+  _createClass(ImportStatement, [{
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(ImportStatement.prototype), "toJSON", this).call(this);
+
+      ret.importedEntities = _classPrivateFieldGet(this, _importedEntities).map(function (i) {
+        return i.toJSON();
+      });
+      return ret;
+    }
+  }]);
+
+  return ImportStatement;
 }(MultiPartExpressionNode);
 
 exports.ImportStatement = ImportStatement;
@@ -9361,7 +9647,20 @@ var KeywordStatement = /*#__PURE__*/function (_MultiPartExpressionN25) {
     return _this36;
   }
 
-  return _createClass(KeywordStatement);
+  _createClass(KeywordStatement, [{
+    key: "toJSON",
+    value: function toJSON() {
+      var ret = _get(_getPrototypeOf(KeywordStatement.prototype), "toJSON", this).call(this);
+
+      ret.keyword = this.getChildren()[0].toJSON();
+      ret.values = _classPrivateFieldGet(this, _values3).map(function (v) {
+        return v.toJSON();
+      });
+      return ret;
+    }
+  }]);
+
+  return KeywordStatement;
 }(MultiPartExpressionNode); //#endregion - other multipart
 
 
@@ -10162,6 +10461,19 @@ var StatementBlock = /*#__PURE__*/function (_SymptomMonitor) {
         startLine: this.getStartLine(),
         children: _classPrivateFieldGet(this, _childBlocks).map(function (b) {
           return b.toJSON();
+        })
+      };
+    }
+  }, {
+    key: "toTree",
+    value: function toTree() {
+      return {
+        id: this.getId(),
+        statements: _classPrivateFieldGet(this, _statements).map(function (s) {
+          return s.toJSON();
+        }),
+        children: _classPrivateFieldGet(this, _childBlocks).map(function (b) {
+          return b.toTree();
         })
       };
     }
@@ -11068,8 +11380,20 @@ var FunctionBlock = /*#__PURE__*/function (_ScopeBlock) {
      * @param {FunctionBlock} block 
      * @returns {Symptom[]}
      */
-    //#endregion - symptoms
 
+  }, {
+    key: "toTree",
+    value: //#endregion - symptoms
+    function toTree() {
+      var statements = this.getStatements();
+      return {
+        id: this.getId(),
+        definition: statements.length > 0 ? statements[0].toJSON() : {},
+        statements: statements.slice(1).map(function (s) {
+          return s.toJSON();
+        })
+      };
+    }
   }]);
 
   return FunctionBlock;
@@ -18332,7 +18656,7 @@ var Statement = /*#__PURE__*/function (_SymptomMonitor) {
         _expressions2.pop();
       }
 
-      if (_expressions2[0].isOneOf([_enums.ExpressionEntity.IfDefinition, _enums.ExpressionEntity.ElifDefinition, _enums.ExpressionEntity.WhileDefinition])) {
+      if (_expressions2.length > 0 && _expressions2[0].isOneOf([_enums.ExpressionEntity.IfDefinition, _enums.ExpressionEntity.ElifDefinition, _enums.ExpressionEntity.WhileDefinition])) {
         _this.addRule(_classPrivateMethodGet(_assertThisInitialized(_this), _checkAssignmentInBoolean, _checkAssignmentInBoolean2));
       }
     }
@@ -18594,6 +18918,15 @@ var Statement = /*#__PURE__*/function (_SymptomMonitor) {
       if (!processedSource.continuesOnNextLine()) {
         _classPrivateMethodGet(this, _completeProcessing, _completeProcessing2).call(this);
       }
+    }
+  }, {
+    key: "toJSON",
+    value: function toJSON() {
+      return {
+        expressions: _classPrivateFieldGet(this, _expressionTree).map(function (e) {
+          return e.toJSON();
+        })
+      };
     }
   }], [{
     key: "createFromSource",
@@ -19106,8 +19439,18 @@ var BlockStatement = /*#__PURE__*/function (_Statement) {
       }
     } //#endregion - extensions
     //#region - symptoms
-    //#endregion - symptoms
 
+  }, {
+    key: "toJSON",
+    value: //#endregion - symptoms
+    function toJSON() {
+      return {
+        definition: this.getDefinitionStatement().toJSON(),
+        statements: _classPrivateFieldGet(this, _statements).slice(1).map(function (s) {
+          return s.toJSON();
+        })
+      };
+    }
   }]);
 
   return BlockStatement;
@@ -19311,6 +19654,7 @@ var sortSymptoms = function sortSymptoms(a, b) {
 };
 
 var parse = function parse(pyString) {
+  var showTree = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
   var doc = new _docinfo.DocInfo(pyString);
   var symptoms = doc.getSymptoms().sort(sortSymptoms).map(function (symptom) {
     try {
@@ -19360,13 +19704,21 @@ var parse = function parse(pyString) {
       };
     }
   });
-  return {
+  var blocks = doc.getBlocks();
+  var retObj = {
     misconceptions: misconceptions,
     symptoms: symptoms,
-    blocks: doc.getBlocks().toJSON(),
+    blocks: blocks.toJSON(),
     variables: variables,
     functions: functions
   };
+
+  if (showTree) {
+    var tree = blocks.toTree();
+    retObj.tree = tree;
+  }
+
+  return retObj;
 }; // Add functions that return info about misconceptions and symptoms defined in the library (symptom checker should be able to just pull from the misconceptions)
 
 
