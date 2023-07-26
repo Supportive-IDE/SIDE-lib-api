@@ -14,7 +14,8 @@ app.get('/parse', async (req, res) => {
             res.status(400).json({error: `Missing required parameter, pythonStr, which should be Python source code in string format.`});
         }
         else {
-            const result = SIDElib.parse(decodeURIComponent(pythonStr));
+            const showTree = req.query.showTree && req.query.showTree == "true"
+            const result = SIDElib.parse(decodeURIComponent(pythonStr), showTree);
             res.json(result);
         }
     } catch (e) {
