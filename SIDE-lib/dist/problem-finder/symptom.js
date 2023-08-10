@@ -223,25 +223,13 @@ var Symptom = /*#__PURE__*/function () {
       return _classPrivateFieldGet(this, _additionalInfo);
     }
     /**
-     * A static factory method that creates a new symptom with the appropriate subclass for the given problem type
-     * @param {String} probType The symptom id
-     * @param {Number} lineNumber The document line number
-     * @param {String} blockId The string id of the block
-     * @param {Number} docIndex The index of the symptom in the raw document text
-     * @param {Number} lineIndex The index of the symptom in the raw line text
-     * @param {String} affectedText The affected text
-     * @param {Object} additionalInfo An optional object with more information
-     * @returns {Symptom} A new Symptom of an instance of a more specific subclass.
+     * Creates a String representation of the symptom
+     * @returns {String} A String representation of the symptom
      */
 
   }, {
     key: "toString",
-    value:
-    /**
-     * Creates a String representation of the symptom
-     * @returns {String} A String representation of the symptom
-     */
-    function toString() {
+    value: function toString() {
       return "{line: ".concat(_classPrivateFieldGet(this, _line), ", type: ").concat(_classPrivateFieldGet(this, _id), ", text: ").concat(_classPrivateFieldGet(this, _affectedText), ", docIndex: ").concat(_classPrivateFieldGet(this, _docIndex), ", lineIndex: ").concat(_classPrivateFieldGet(this, _lineIndex), ", additionalInfo: ").concat(_classPrivateFieldGet(this, _additionalInfo));
     }
     /**
@@ -260,108 +248,6 @@ var Symptom = /*#__PURE__*/function () {
         docIndex: _classPrivateFieldGet(this, _docIndex),
         lineIndex: _classPrivateFieldGet(this, _lineIndex)
       };
-    }
-  }], [{
-    key: "createOLD",
-    value: function createOLD(probType, lineNumber, blockId, docIndex, lineIndex) {
-      var affectedText = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
-      var additionalInfo = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : {};
-
-      switch (probType) {
-        case _enums.SymptomType.AssignedNone:
-          // statement (tree) - added to new factory
-          return new SymptomAssignedNoReturn(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.AssignmentInReturn:
-          // statement (tree) - added to new factory
-          return new SymptomAssignmentInReturn(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.CompareBoolLiteral:
-          // statement (tree) - added to new factory
-          return new SymptomCompareBoolLiteral(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.DefinitionFollowedByReservedWord:
-          // statement (tree) - added to new factory
-          return new SymptomDefinitionFollowedByReservedWord(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.FunctionPrints:
-          // block statement
-          return new SymptomFunctionPrints(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.LoopVarModifiedInChildLoop:
-          // block statement
-          return new SymptomLoopVarModifiedInChildLoop(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.LoopVarNotModified:
-          // block statement
-          return new SymptomLoopVarNotUsed(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.NaturalLanguageBoolean:
-          // statement (tree) - added to new factory
-          return new SymptomNaturalLanguageBoolean(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.OneLineConditional:
-          // block statement
-          return new SymptomOneLineConditional(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.OverwrittenVariable:
-          // variables
-          return new SymptomOverwrittenVariable(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.ReturnInParentheses:
-          // statement (tree) - added to new factory
-          return new SymptomReturnInParentheses(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.SequentialIfs:
-          // block
-          return new SymptomSequentialIfs(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.SubscriptedNonSubscriptable:
-          // statement (tree) - added to new factory
-          return new SymptomSubscriptedNonSubscriptable(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.TernaryReturnsBool:
-          // statement - added to new factory
-          return new SymptomTernaryReturnsBool(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.TypeErrorInvalid:
-          // statement - added to new factory
-          return new SymptomTypeInvalid(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.TypeUnnecessary:
-          // statement - added to new factory
-          return new SymptomTypeUnnecessary(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UnexpectedColon:
-          // statement - added to new factory
-          return new SymptomUnexpectedColon(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UnknownMethod:
-          return new SymptomUnknownMethod(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UnreachableExit:
-          // block
-          return new SymptomUnreachableExit(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UnreachableInfiniteLoop:
-          // block
-          return new SymptomUnreachableLoop(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UndefinedVariable:
-          // variable
-          return new SymptomUndefinedVariable(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.UnusedReturn:
-          // statment
-          return new SymptomUnusedReturn(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        case _enums.SymptomType.VariableWithSameNameAsFunction:
-          // variables and functions
-          return new SymptomVariableWithSameNameAsFunction(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-
-        default:
-          return new Symptom(probType.name, lineNumber, blockId, docIndex, lineIndex, affectedText, additionalInfo);
-      }
     }
   }]);
 
@@ -493,6 +379,7 @@ var SymptomCompareBoolLiteral = /*#__PURE__*/function (_Symptom3) {
       if (additionalInfo.hasOwnProperty("boolValue")) obj.boolValue = additionalInfo.boolValue;
       if (additionalInfo.hasOwnProperty("operator")) obj.operator = additionalInfo.operator;
       if (additionalInfo.hasOwnProperty("boolLiteral")) obj.boolLiteral = additionalInfo.boolLiteral;
+      if (additionalInfo.hasOwnProperty("usedIn")) obj.usedIn = additionalInfo.usedIn;
       return obj;
     }
   }]);
@@ -1579,89 +1466,19 @@ var SymptomFinder = /*#__PURE__*/function () {
         default:
           return new Symptom(type.name, lineNum, blockId, docIndex, lineIndex, affectedText, additionalInfo);
       }
-    } // /**
-    //  * Searches for symptoms that can be found in a fully parsed expression array i.e. the expressions after
-    //  * they are parsed into a tree.
-    //  * @param {Statement} statement 
-    //  * @param {String} blockId The id of the block the expressions belong to
-    //  */
-    // static searchExpressionTree(statement, blockId) {
-    //     const expressions = statement.getExpressions();
-    //     this.#checkAssignedNone(expressions, blockId);
-    //     this.#checkAssignmentInBoolean(expressions, statement, blockId);
-    //     this.#checkBooleanExpressions(expressions, blockId);
-    // }
-    // /**
-    //  * Helper method. Checks if the expression at index i indicates the CompareBoolLiteral symptom.
-    //  * @param {ExpressionNode[]} expressions 
-    //  * @param {String} blockId
-    //  */
-    // static #checkBooleanExpressions(expressions, blockId) {
-    //     for (const e of expressions) {
-    //         const boolExpressions = e.getExpressionsOfKind(ExpressionEntity.ComparisonExpression);
-    //         for (const bool of boolExpressions) {
-    //             const children = bool.getChildren();
-    //             if (this.#isCompareBoolLiteral(children)) {
-    //                 this.symptoms.push(SymptomFinder.createStatementSymptom(SymptomType.CompareBoolLiteral,
-    //                                                                          children, 0, children.length - 1, blockId,
-    //                                                                          {
-    //                                                                             boolValue: children[0].getTextValue(),
-    //                                                                             operator: children[1].getTextValue(),
-    //                                                                             boolLiteral: children[2].getTextValue()
-    //                                                                          }));
-    //             }
-    //         }   
-    //     }
-    // }
-    // /**
-    //  * Helper method to check if 
-    //  * @param {ExpressionNode[]} children 
-    //  * @returns {Boolean}
-    //  */
-    // static #isCompareBoolLiteral(children) {
-    //     return children.length === 3 && children[1].isOneOf([ExpressionEntity.EqualOperator, ExpressionEntity.IsKeyword])
-    //                 && children[2].isOneOf([ExpressionEntity.TrueType, ExpressionEntity.FalseType]);
-    // }
-    // /**
-    //  * Helper method. Checks if the expression at index i indicates the AndOr symptom.
-    //  * @param {ExpressionNode[]} expressions 
-    //  * @param {Number} i 
-    //  * @returns {Boolean}
-    //  */
-    // static #isAndOr(expressions, i) {
-    //     return expressions[i].is(ExpressionEntity.AndOperator) && i < expressions.length - 1 && expressions[i+1].is(ExpressionEntity.OrOperator)
-    // }
-    // /**
-    //  * Helper method. Checks for the presence of a split comparison operator.
-    //  * @param {ExpressionNode[]} expressions 
-    //  * @param {Number} i 
-    //  * @returns {Boolean}
-    //  */
-    // static #isDoubleComparisonOperator(expressions, i) {
-    //     return i < expressions.length - 1 && expressions[i].isOneOf([ExpressionEntity.AssignmentOperator, ExpressionCategory.ComparisonOperators])
-    //            && expressions[i+1].isOneOf([ExpressionEntity.AssignmentOperator, ExpressionCategory.ComparisonOperators]);
-    // }
-    // /**
-    //  * Helper method. Checks if the expression at index i indicates the AndOr symptom.
-    //  * @param {ExpressionNode[]} expressions 
-    //  * @param {Number} i 
-    //  * @returns {Boolean}
-    //  */
-    // static #isOutOfPlaceBooleanOperator(expressions, i) {
-    //     if (!expressions[i].is(ExpressionCategory.LogicalOperators)) {
-    //         return false;
-    //     }
-    //     if (!expressions[i].is(ExpressionEntity.NotOperator) && (i === 0 || expressions[i-1].isOneOf([ExpressionCategory.LogicalOperators, ExpressionCategory.MathsOperators, ExpressionCategory.ComparisonOperators, ExpressionCategory.BlockDefinitions]))) {
-    //         return true;
-    //     }
-    //     if (!expressions[i].is(ExpressionEntity.NotOperator) && i < expressions.length - 1 && 
-    //         expressions[i+1].isOneOf([ExpressionCategory.LogicalOperators, ExpressionCategory.MathsOperators, ExpressionCategory.ComparisonOperators, ExpressionCategory.BlockDefinitions])
-    //         && !expressions[i+1].is(ExpressionEntity.NotOperator)) {
-    //         return true;
-    //     }
-    //     return false;
-    // }
+    }
+  }, {
+    key: "checkBooleanCompare",
+    value: function checkBooleanCompare(expression) {
+      var parent = expression.getParent();
 
+      if (parent !== undefined) {
+        if (parent.is(_enums.ExpressionEntity.AssignmentStatement)) {// check on value side... no, only if bool literal comparison
+        } else if (parent.isOneOf([_enums.ExpressionEntity.BooleanExpression, _enums.ExpressionEntity.UserDefinedFunctionCall, _enums.ExpressionEntity.BuiltInFunctionCall, _enums.ExpressionEntity.IfDefinitionStatement, _enums.ExpressionEntity.ElifDefinitionStatement, _enums.ExpressionEntity.WhileDefinitionStatement, _enums.ExpressionEntity.ReturnStatement, _enums.ExpressionEntity.AssertStatement, _enums.ExpressionEntity.ComparisonExpression, _enums.ExpressionEntity.GroupStatement, _enums.ExpressionEntity.TernaryStatement, _enums.ExpressionEntity.BuiltInMethodCall, _enums.ExpressionEntity.UserDefinedMethodCall])) {//console.log("should be safe construct");
+        } else {//    console.log("stop"); // leaving out compound types, global variable statements, calculated expression
+        }
+      }
+    }
   }]);
 
   return SymptomFinder;
@@ -1670,5 +1487,7 @@ var SymptomFinder = /*#__PURE__*/function () {
 exports.SymptomFinder = SymptomFinder;
 
 _defineProperty(SymptomFinder, "symptoms", []);
+
+_defineProperty(SymptomFinder, "constructs", []);
 
 _defineProperty(SymptomFinder, "text", "");

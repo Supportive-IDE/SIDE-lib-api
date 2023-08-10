@@ -398,6 +398,7 @@ function _findSymptoms2() {
             for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
               var expression = _step5.value;
               expression.checkForSymptoms();
+              expression.checkForConstructs(expression);
             }
           } catch (err) {
             _iterator5.e(err);

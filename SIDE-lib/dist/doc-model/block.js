@@ -436,6 +436,20 @@ var StatementBlock = /*#__PURE__*/function (_SymptomMonitor) {
     value: function getStartLine() {
       return _classPrivateFieldGet(this, _blockEntity) === _enums.ExpressionEntity.DocumentDefinition ? 0 : _classPrivateFieldGet(this, _statements).length > 0 ? _classPrivateFieldGet(this, _statements)[0].getFirstLineNumber() : -1;
     }
+  }, {
+    key: "getEndLine",
+    value: function getEndLine() {
+      var childLastLine = _classPrivateFieldGet(this, _childBlocks).length > 0 ? _classPrivateFieldGet(this, _childBlocks)[_classPrivateFieldGet(this, _childBlocks).length - 1].getEndLine() : -1;
+
+      if (_classPrivateFieldGet(this, _statements).length === 0) {
+        return childLastLine;
+      }
+
+      var lastStatement = _classPrivateFieldGet(this, _statements)[_classPrivateFieldGet(this, _statements).length - 1];
+
+      var topLevelLastLine = lastStatement.getLastLineNumber();
+      return Math.max(childLastLine, topLevelLastLine);
+    }
     /**
      * Checks whether this is a scope block
      * @returns {Boolean}
@@ -612,10 +626,6 @@ var StatementBlock = /*#__PURE__*/function (_SymptomMonitor) {
   }, {
     key: "getBlockContainingLineNumber",
     value: function getBlockContainingLineNumber(lineNum) {
-      if (_classPrivateFieldGet(this, _statements).length === 0) {
-        console.log("stop");
-      }
-
       if (_classPrivateFieldGet(this, _statements)[0].getFirstLineNumber() > lineNum || this.getLastStatement().getLastLineNumber() < lineNum) {
         return undefined;
       } else {
@@ -793,6 +803,7 @@ var StatementBlock = /*#__PURE__*/function (_SymptomMonitor) {
       return {
         id: this.getId(),
         startLine: this.getStartLine(),
+        endLine: this.getEndLine(),
         children: _classPrivateFieldGet(this, _childBlocks).map(function (b) {
           return b.toJSON();
         })

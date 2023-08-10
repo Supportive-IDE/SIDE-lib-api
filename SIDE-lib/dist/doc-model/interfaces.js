@@ -57,6 +57,8 @@ function _classApplyDescriptorGet(receiver, descriptor) { if (descriptor.get) { 
 
 var _rules = /*#__PURE__*/new WeakMap();
 
+var _constructRules = /*#__PURE__*/new WeakMap();
+
 /**
  * Should be inherited by anything that can have a symptom (expressions, statements, functions etc).
  * Should not be instantiated directly.
@@ -67,6 +69,11 @@ var SymptomMonitor = /*#__PURE__*/function () {
     _classCallCheck(this, SymptomMonitor);
 
     _classPrivateFieldInitSpec(this, _rules, {
+      writable: true,
+      value: []
+    });
+
+    _classPrivateFieldInitSpec(this, _constructRules, {
       writable: true,
       value: []
     });
@@ -97,6 +104,31 @@ var SymptomMonitor = /*#__PURE__*/function () {
       }
     }
     /**
+     * Runs each construct rule function. Any constructs found are added to the SymptomFinder
+     * @param {SymptomMonitor} obj 
+     */
+
+  }, {
+    key: "checkForConstructs",
+    value: function checkForConstructs(obj) {
+      var _iterator2 = _createForOfIteratorHelper(_classPrivateFieldGet(this, _constructRules)),
+          _step2;
+
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var _SymptomFinder$constr;
+
+          var rule = _step2.value;
+
+          (_SymptomFinder$constr = _symptom.SymptomFinder.constructs).push.apply(_SymptomFinder$constr, _toConsumableArray(rule(obj)));
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    }
+    /**
      * Adds a rule function to the this object.
      * @param {Function: Symptom[]} ruleFunc A function that returns an array of Symptom objects
      */
@@ -105,6 +137,16 @@ var SymptomMonitor = /*#__PURE__*/function () {
     key: "addRule",
     value: function addRule(ruleFunc) {
       _classPrivateFieldGet(this, _rules).push(ruleFunc);
+    }
+    /**
+     * Adds a construct rule function to this object.
+     * @param {Function: Construct[]} ruleFunc A function that returns an array of Construct objects
+     */
+
+  }, {
+    key: "addConstructRule",
+    value: function addConstructRule(ruleFunc) {
+      _classPrivateFieldGet(this, _constructRules).push(ruleFunc);
     }
     /**
      * Adds multiple rule functions to this object.
@@ -117,6 +159,18 @@ var SymptomMonitor = /*#__PURE__*/function () {
       var _classPrivateFieldGet2;
 
       (_classPrivateFieldGet2 = _classPrivateFieldGet(this, _rules)).push.apply(_classPrivateFieldGet2, _toConsumableArray(rules));
+    }
+    /**
+     * Adds multiple rule functions to this object.
+     * @param {Array<Function: Construct[]>} rules An array of functions, each of which returns an array of Construct objects
+     */
+
+  }, {
+    key: "addConstructRules",
+    value: function addConstructRules(rules) {
+      var _classPrivateFieldGet3;
+
+      (_classPrivateFieldGet3 = _classPrivateFieldGet(this, _constructRules)).push.apply(_classPrivateFieldGet3, _toConsumableArray(rules));
     }
   }]);
 
@@ -187,21 +241,21 @@ var TypeChangeObserverNotifier = /*#__PURE__*/function (_SymptomMonitor) {
   }, {
     key: "sendUpdate",
     value: function sendUpdate(dataType) {
-      var _iterator2 = _createForOfIteratorHelper(this.observers),
-          _step2;
+      var _iterator3 = _createForOfIteratorHelper(this.observers),
+          _step3;
 
       try {
-        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-          var obs = _step2.value;
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var obs = _step3.value;
 
           if (obs instanceof TypeChangeObserverNotifier) {
             obs.typeUpdateReceived(dataType);
           }
         }
       } catch (err) {
-        _iterator2.e(err);
+        _iterator3.e(err);
       } finally {
-        _iterator2.f();
+        _iterator3.f();
       }
     }
     /**
