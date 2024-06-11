@@ -292,22 +292,6 @@ var functionCallsNoParentheses = function functionCallsNoParentheses(symptoms, v
     for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
       _loop();
     }
-    /*for (let symptom of undefinedVar) {
-        let name = symptom.getAffectedText();
-        let docIndex = symptom.getDocIndex();
-        for (let pair of varsWithFunctionNames) {
-            if (pair.getAffectedText() === name && pair.getDocIndex() === docIndex) {
-                const matchingSubscripted = subscriptedNonSubscriptable.filter(s => s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex);
-                if (matchingSubscripted.length === 0) {
-                    const reason = new Reason(
-                        [symptom, pair],
-                        `The variable ${name} has not been assigned a value and the file contains a user-defined function of the same name.`
-                    );
-                    occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
-                }
-            }
-        }
-    }*/
   } catch (err) {
     _iterator7.e(err);
   } finally {
@@ -647,33 +631,49 @@ var noReservedWords = function noReservedWords(symptoms) {
  * @param {Symptom[]} symptoms 
  * @returns {MisconceptionOccurrence[]} An array of occurrences of the ParenthesesOnlyIfArgument misconception
  */
-var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms) {
-  // undefined variable AND variable with same name as function that applies to userDefinedFunction with 0 arguments
+var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms, variables) {
   var undefinedVar = symptoms.filter(function (s) {
     return s.getID() === _enums.SymptomType.UndefinedVariable.name;
+  });
+  var functionVars = Array.from(variables.values()).flatMap(function (vInfoArr) {
+    return vInfoArr;
+  }).flatMap(function (vInfo) {
+    return vInfo.getUsages();
+  }).filter(function (usage) {
+    return usage.getVariable().getDataType() === _enums.DataType.Function;
+  }).map(function (usage) {
+    return usage.getVariable();
+  });
+  var subscriptedNonSubscriptable = symptoms.filter(function (s) {
+    return s.getID() === _enums.SymptomType.SubscriptedNonSubscriptable.name;
   });
   var varsWithFunctionNames = symptoms.filter(function (s) {
     return s.getID() === _enums.SymptomType.VariableWithSameNameAsFunction.name && s.getAdditionalInfo().funcType === _constants.USER_DEFINED_FUNCTION && s.getAdditionalInfo().numArgsExpected === 0;
   });
   var occurrences = [];
-  if (varsWithFunctionNames.length === 0) {
+  if (varsWithFunctionNames.length === 0 || undefinedVar.length === 0 && functionVars.length === 0) {
     return occurrences;
   }
-  var _iterator22 = _createForOfIteratorHelper(undefinedVar),
+  var _iterator22 = _createForOfIteratorHelper(varsWithFunctionNames),
     _step22;
   try {
-    for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
-      var symptom = _step22.value;
-      var name = symptom.getAffectedText();
-      var docIndex = symptom.getDocIndex();
-      var _iterator23 = _createForOfIteratorHelper(varsWithFunctionNames),
+    var _loop3 = function _loop3() {
+      var funcNameVar = _step22.value;
+      var name = funcNameVar.getAffectedText();
+      var docIndex = funcNameVar.getDocIndex();
+      var _iterator23 = _createForOfIteratorHelper(undefinedVar),
         _step23;
       try {
         for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
-          var pair = _step23.value;
-          if (pair.getAffectedText() === name && pair.getDocIndex() === docIndex) {
-            var reason = new Reason([symptom, pair], "The variable ".concat(name, " has not been assigned a value and the file contains a user-defined function of the same name that does not expect any arguments."));
-            occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
+          var u = _step23.value;
+          if (u.getAffectedText() === name && u.getDocIndex() === docIndex) {
+            var matchingSubscripted = subscriptedNonSubscriptable.filter(function (s) {
+              return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
+            });
+            if (matchingSubscripted.length === 0) {
+              var reason = new Reason([u, funcNameVar], "The variable ".concat(name, " has not been assigned a value and the file contains a user-defined function of the same name, which does not expect any arguments."));
+              occurrences.push(new MisconceptionOccurrence(u.getLineNumber(), u.getDocIndex(), reason));
+            }
           }
         }
       } catch (err) {
@@ -681,6 +681,29 @@ var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms) {
       } finally {
         _iterator23.f();
       }
+      var _iterator24 = _createForOfIteratorHelper(functionVars),
+        _step24;
+      try {
+        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
+          var funcVar = _step24.value;
+          if (funcVar.getTextValue() === name && funcVar.getDocumentStartIndex() === docIndex) {
+            var _matchingSubscripted2 = subscriptedNonSubscriptable.filter(function (s) {
+              return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
+            });
+            if (_matchingSubscripted2.length === 0) {
+              var _reason6 = new Reason([funcNameVar], "The variable ".concat(name, " has not been assigned a value and the file contains a user-defined function of the same name, which does not expect any arguments."));
+              occurrences.push(new MisconceptionOccurrence(funcNameVar.getLineNumber(), funcNameVar.getDocIndex(), _reason6));
+            }
+          }
+        }
+      } catch (err) {
+        _iterator24.e(err);
+      } finally {
+        _iterator24.f();
+      }
+    };
+    for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+      _loop3();
     }
   } catch (err) {
     _iterator22.e(err);
@@ -707,11 +730,11 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
   });
   var occurrences = [];
   // Assigning things that print but don't return
-  var _iterator24 = _createForOfIteratorHelper(assignedNone),
-    _step24;
+  var _iterator25 = _createForOfIteratorHelper(assignedNone),
+    _step25;
   try {
-    for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
-      var symptom = _step24.value;
+    for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
+      var symptom = _step25.value;
       var sJSON = symptom.toJSON();
       if (sJSON.expressionNoValue.type === _constants.USER_DEFINED_FUNCTION) {
         (function () {
@@ -734,15 +757,15 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
     }
     // Not assigning things that print AND return
   } catch (err) {
-    _iterator24.e(err);
+    _iterator25.e(err);
   } finally {
-    _iterator24.f();
+    _iterator25.f();
   }
-  var _iterator25 = _createForOfIteratorHelper(unusedReturn),
-    _step25;
+  var _iterator26 = _createForOfIteratorHelper(unusedReturn),
+    _step26;
   try {
-    var _loop3 = function _loop3() {
-      var symptom = _step25.value;
+    var _loop4 = function _loop4() {
+      var symptom = _step26.value;
       var sJSON = symptom.toJSON();
       var funcName = sJSON.unusedFunc.value;
       var funcPrints = functionPrints.filter(function (func) {
@@ -751,17 +774,17 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
       var funcDoesPrint = funcPrints.length > 0;
       if (funcDoesPrint) {
         // Create a misconception occurrence
-        var _reason6 = new Reason([symptom].concat(_toConsumableArray(funcPrints)), "User-defined function ".concat(funcName, " prints to the console and returns a value but the value is not used."));
-        occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason6));
+        var _reason7 = new Reason([symptom].concat(_toConsumableArray(funcPrints)), "User-defined function ".concat(funcName, " prints to the console and returns a value but the value is not used."));
+        occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason7));
       }
     };
-    for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
-      _loop3();
+    for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
+      _loop4();
     }
   } catch (err) {
-    _iterator25.e(err);
+    _iterator26.e(err);
   } finally {
-    _iterator25.f();
+    _iterator26.f();
   }
   return occurrences;
 };
@@ -793,16 +816,16 @@ var sequentialIfsAreExclusive = function sequentialIfsAreExclusive(symptoms) {
     return s.getID() === _enums.SymptomType.SequentialIfs.name && s.getAdditionalInfo().branchMatches.length > 0;
   });
   var occurrences = [];
-  var _iterator26 = _createForOfIteratorHelper(sequentialIfsWithMatches),
-    _step26;
+  var _iterator27 = _createForOfIteratorHelper(sequentialIfsWithMatches),
+    _step27;
   try {
-    for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
-      var conditional = _step26.value;
-      var _iterator27 = _createForOfIteratorHelper(conditional.getAdditionalInfo().branchMatches),
-        _step27;
+    for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
+      var conditional = _step27.value;
+      var _iterator28 = _createForOfIteratorHelper(conditional.getAdditionalInfo().branchMatches),
+        _step28;
       try {
-        for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
-          var sequence = _step27.value;
+        for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
+          var sequence = _step28.value;
           var sequenceTxt = sequence.map(function (b) {
             return b.lineNum + 1;
           }).join(", ");
@@ -820,15 +843,15 @@ var sequentialIfsAreExclusive = function sequentialIfsAreExclusive(symptoms) {
           }*/
         }
       } catch (err) {
-        _iterator27.e(err);
+        _iterator28.e(err);
       } finally {
-        _iterator27.f();
+        _iterator28.f();
       }
     }
   } catch (err) {
-    _iterator26.e(err);
+    _iterator27.e(err);
   } finally {
-    _iterator26.f();
+    _iterator27.f();
   }
   return occurrences;
 };
@@ -848,18 +871,18 @@ var parameterMustBeAssignedInFunction = function parameterMustBeAssignedInFuncti
     return s.getID() === _enums.SymptomType.OverwrittenVariable.name && s.getAdditionalInfo().isParameter && s.getAdditionalInfo().prevUsageIsDefinition && !assignInReturnLines.has(s.getLineNumber());
   });
   var occurrences = [];
-  var _iterator28 = _createForOfIteratorHelper(variableOverwrite),
-    _step28;
+  var _iterator29 = _createForOfIteratorHelper(variableOverwrite),
+    _step29;
   try {
-    for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
-      var symptom = _step28.value;
+    for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
+      var symptom = _step29.value;
       var reason = new Reason([symptom], "The parameter ".concat(symptom.getAffectedText(), " is overwritten before use."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator28.e(err);
+    _iterator29.e(err);
   } finally {
-    _iterator28.f();
+    _iterator29.f();
   }
   return occurrences;
 };
@@ -874,18 +897,18 @@ var stringMethodsModifyTheString = function stringMethodsModifyTheString(symptom
     return s.getID() === _enums.SymptomType.UnusedReturn.name && s.getAdditionalInfo().expression.is(_enums.ExpressionCategory.BuiltInMethods) && _utils.stringMethodsLookup.has(s.getAdditionalInfo().expression.getEntity());
   });
   var occurrences = [];
-  var _iterator29 = _createForOfIteratorHelper(unusedMethodReturns),
-    _step29;
+  var _iterator30 = _createForOfIteratorHelper(unusedMethodReturns),
+    _step30;
   try {
-    for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
-      var symptom = _step29.value;
+    for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
+      var symptom = _step30.value;
       var reason = new Reason([symptom], "A String method, ".concat(symptom.getAdditionalInfo().expression.getTextValue(), ", that returns a new string is called but the return value is not assigned or passed."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator29.e(err);
+    _iterator30.e(err);
   } finally {
-    _iterator29.f();
+    _iterator30.f();
   }
   return occurrences;
 };
@@ -900,18 +923,18 @@ var typeConversionModifiesArgument = function typeConversionModifiesArgument(sym
     return s.getID() === _enums.SymptomType.UnusedReturn.name && s.getAdditionalInfo().expression.isOneOf([_enums.ExpressionEntity.StrFunction, _enums.ExpressionEntity.IntFunction, _enums.ExpressionEntity.FloatFunction, _enums.ExpressionEntity.BoolFunction, _enums.ExpressionEntity.ListFunction, _enums.ExpressionEntity.TupleFunction, _enums.ExpressionEntity.SetFunction]);
   });
   var occurrences = [];
-  var _iterator30 = _createForOfIteratorHelper(unusedTypeConversions),
-    _step30;
+  var _iterator31 = _createForOfIteratorHelper(unusedTypeConversions),
+    _step31;
   try {
-    for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
-      var symptom = _step30.value;
+    for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
+      var symptom = _step31.value;
       var reason = new Reason([symptom], "".concat(symptom.getAdditionalInfo().expression.getTextValue(), "() is called but the converted value returned by the function is not saved or passed."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator30.e(err);
+    _iterator31.e(err);
   } finally {
-    _iterator30.f();
+    _iterator31.f();
   }
   return occurrences;
 };
@@ -932,38 +955,17 @@ var whileSameAsIf = function whileSameAsIf(symptoms) {
     return s.getID() === _enums.SymptomType.LoopReturn.name;
   });
   var occurrences = [];
-  var _iterator31 = _createForOfIteratorHelper(whileVarNotModified),
-    _step31;
+  var _iterator32 = _createForOfIteratorHelper(whileVarNotModified),
+    _step32;
   try {
-    var _loop4 = function _loop4() {
-      var notModified = _step31.value;
+    var _loop5 = function _loop5() {
+      var notModified = _step32.value;
       var notModifiedEarlyExit = loopEarlyExit.filter(function (s) {
         return s.getBlock() === notModified.getBlock();
       });
       if (notModifiedEarlyExit.length > 0) {
         var reason = new Reason([notModified].concat(_toConsumableArray(notModifiedEarlyExit)), "No while loop variables are modified (excluding modifications in any nested loops) and the loop always exits on the first iteration.");
         occurrences.push(new MisconceptionOccurrence(notModified.getLineNumber(), notModified.getDocIndex(), reason));
-      }
-    };
-    for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
-      _loop4();
-    }
-  } catch (err) {
-    _iterator31.e(err);
-  } finally {
-    _iterator31.f();
-  }
-  var _iterator32 = _createForOfIteratorHelper(whileTrue),
-    _step32;
-  try {
-    var _loop5 = function _loop5() {
-      var noVar = _step32.value;
-      var noVarEarlyExit = loopEarlyExit.filter(function (s) {
-        return s.getBlock() === noVar.getBlock();
-      });
-      if (noVarEarlyExit.length > 0) {
-        var reason = new Reason([noVar].concat(_toConsumableArray(noVarEarlyExit)), "A \"while True\" loop always exits on the first iteration and therefore behaves as an if statement. Caution: the intention here may be to continue iteration, in which case the misconception lies elsewhere.");
-        occurrences.push(new MisconceptionOccurrence(noVar.getLineNumber(), noVar.getDocIndex(), reason));
       }
     };
     for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
@@ -973,6 +975,27 @@ var whileSameAsIf = function whileSameAsIf(symptoms) {
     _iterator32.e(err);
   } finally {
     _iterator32.f();
+  }
+  var _iterator33 = _createForOfIteratorHelper(whileTrue),
+    _step33;
+  try {
+    var _loop6 = function _loop6() {
+      var noVar = _step33.value;
+      var noVarEarlyExit = loopEarlyExit.filter(function (s) {
+        return s.getBlock() === noVar.getBlock();
+      });
+      if (noVarEarlyExit.length > 0) {
+        var reason = new Reason([noVar].concat(_toConsumableArray(noVarEarlyExit)), "A \"while True\" loop always exits on the first iteration and therefore behaves as an if statement. Caution: the intention here may be to continue iteration, in which case the misconception lies elsewhere.");
+        occurrences.push(new MisconceptionOccurrence(noVar.getLineNumber(), noVar.getDocIndex(), reason));
+      }
+    };
+    for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
+      _loop6();
+    }
+  } catch (err) {
+    _iterator33.e(err);
+  } finally {
+    _iterator33.f();
   }
   return occurrences;
 };
@@ -987,11 +1010,11 @@ var typeMustBeSpecified = function typeMustBeSpecified(symptoms) {
     return s.getID() === _enums.SymptomType.TypeUnnecessary.name;
   });
   var occurrences = [];
-  var _iterator33 = _createForOfIteratorHelper(typeUnnecessary),
-    _step33;
+  var _iterator34 = _createForOfIteratorHelper(typeUnnecessary),
+    _step34;
   try {
-    for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
-      var symptom = _step33.value;
+    for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
+      var symptom = _step34.value;
       var sJSON = symptom.toJSON();
       var reason = void 0;
       // string > list
@@ -1008,9 +1031,9 @@ var typeMustBeSpecified = function typeMustBeSpecified(symptoms) {
       if (reason !== undefined) occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator33.e(err);
+    _iterator34.e(err);
   } finally {
-    _iterator33.f();
+    _iterator34.f();
   }
   return occurrences;
 };
@@ -1084,30 +1107,30 @@ var Misconception = /*#__PURE__*/function () {
   }, {
     key: "isPresentInToken",
     value: function isPresentInToken(startIndex, endIndex) {
-      var _iterator34 = _createForOfIteratorHelper(_classPrivateFieldGet(this, _occurrences)),
-        _step34;
+      var _iterator35 = _createForOfIteratorHelper(_classPrivateFieldGet(this, _occurrences)),
+        _step35;
       try {
-        for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
-          var occurrence = _step34.value;
-          var _iterator35 = _createForOfIteratorHelper(occurrence.getReason().getContributingSymptoms()),
-            _step35;
+        for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
+          var occurrence = _step35.value;
+          var _iterator36 = _createForOfIteratorHelper(occurrence.getReason().getContributingSymptoms()),
+            _step36;
           try {
-            for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
-              var symptom = _step35.value;
+            for (_iterator36.s(); !(_step36 = _iterator36.n()).done;) {
+              var symptom = _step36.value;
               if (startIndex <= symptom.getDocIndex() && endIndex >= symptom.getDocIndex()) {
                 return true;
               }
             }
           } catch (err) {
-            _iterator35.e(err);
+            _iterator36.e(err);
           } finally {
-            _iterator35.f();
+            _iterator36.f();
           }
         }
       } catch (err) {
-        _iterator34.e(err);
+        _iterator35.e(err);
       } finally {
-        _iterator34.f();
+        _iterator35.f();
       }
       return false;
     }
@@ -1148,7 +1171,7 @@ var Misconception = /*#__PURE__*/function () {
 exports.Misconception = Misconception;
 var _line = /*#__PURE__*/new WeakMap();
 var _docIndex = /*#__PURE__*/new WeakMap();
-var _reason7 = /*#__PURE__*/new WeakMap();
+var _reason8 = /*#__PURE__*/new WeakMap();
 var MisconceptionOccurrence = /*#__PURE__*/function () {
   /** @type {Number} */
   // The document line number
@@ -1173,13 +1196,13 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
       writable: true,
       value: void 0
     });
-    _classPrivateFieldInitSpec(this, _reason7, {
+    _classPrivateFieldInitSpec(this, _reason8, {
       writable: true,
       value: void 0
     });
     _classPrivateFieldSet(this, _line, line);
     _classPrivateFieldSet(this, _docIndex, docIndex);
-    _classPrivateFieldSet(this, _reason7, reason);
+    _classPrivateFieldSet(this, _reason8, reason);
   }
 
   /**
@@ -1209,7 +1232,7 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
   }, {
     key: "getReason",
     value: function getReason() {
-      return _classPrivateFieldGet(this, _reason7);
+      return _classPrivateFieldGet(this, _reason8);
     }
 
     /**
@@ -1222,7 +1245,7 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
       return {
         line: _classPrivateFieldGet(this, _line),
         docIndex: _classPrivateFieldGet(this, _docIndex),
-        reason: _classPrivateFieldGet(this, _reason7).toJSON()
+        reason: _classPrivateFieldGet(this, _reason8).toJSON()
       };
     }
   }]);
