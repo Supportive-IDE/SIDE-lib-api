@@ -8109,13 +8109,19 @@ function _checkNaturalLanguage2(exp) {
     if (compType === _enums.DataType.NA && children[2].is(_enums.ExpressionEntity.IfDefinition)) {
       symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
         form: _constants.OR_IF,
-        operator: children[1].getTextValue()
+        operator: children[1].getTextValue(),
+        valueText: children[2].getTextValue(),
+        valueEntity: children[2].getEntity(),
+        tempExpression: exp
       }));
     } else if (compType !== _enums.DataType.Bool && compType !== _enums.DataType.Unknown) {
       symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
         form: _constants.OR_NON_BOOL,
         operator: children[1].getTextValue(),
-        valueType: children[2].getDataType()
+        valueType: children[2].getDataType(),
+        valueText: children[2].getTextValue(),
+        valueEntity: children[2].getEntity(),
+        tempExpression: exp
       }));
     }
   }

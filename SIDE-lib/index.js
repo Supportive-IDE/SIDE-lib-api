@@ -8466,13 +8466,19 @@ function _checkNaturalLanguage2(exp) {
     if (compType === _enums.DataType.NA && children[2].is(_enums.ExpressionEntity.IfDefinition)) {
       symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
         form: _constants.OR_IF,
-        operator: children[1].getTextValue()
+        operator: children[1].getTextValue(),
+        valueText: children[2].getTextValue(),
+        valueEntity: children[2].getEntity(),
+        tempExpression: exp
       }));
     } else if (compType !== _enums.DataType.Bool && compType !== _enums.DataType.Unknown) {
       symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
         form: _constants.OR_NON_BOOL,
         operator: children[1].getTextValue(),
-        valueType: children[2].getDataType()
+        valueType: children[2].getDataType(),
+        valueText: children[2].getTextValue(),
+        valueEntity: children[2].getEntity(),
+        tempExpression: exp
       }));
     }
   }
@@ -18674,6 +18680,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.identifyMisconceptions = exports.Reason = exports.MisconceptionOccurrence = exports.Misconception = void 0;
+var _ast = require("../doc-model/ast.js");
 var _enums = require("../doc-model/enums.js");
 var _constants = require("../utils/constants.js");
 var _utils = require("../utils/utils.js");
@@ -18781,19 +18788,61 @@ var compareMultipleValuesWithOr = function compareMultipleValuesWithOr(symptoms)
   var naturalLanguageOr = symptoms.filter(function (s) {
     return s.getID() === _enums.SymptomType.NaturalLanguageBoolean.name && s.getAdditionalInfo().operator === "or";
   });
-  var occurrences = [];
+  var combined = new Map();
+  var unmatched = [];
   var _iterator3 = _createForOfIteratorHelper(naturalLanguageOr),
     _step3;
   try {
     for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
       var symptom = _step3.value;
-      var reason = new Reason([symptom], "A non-boolean value is used where a boolean expression is expected.");
-      occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
+      var parent = void 0;
+      try {
+        parent = symptom.getAdditionalInfo().tempExpression.getParent();
+        while (parent.is(_enums.ExpressionEntity.BooleanExpression)) {
+          parent = parent.getParent();
+        }
+      } catch (e) {
+        parent = undefined;
+      }
+      if (parent) {
+        if (!combined.has(parent)) {
+          combined.set(parent, []);
+        }
+        combined.get(parent).push(symptom);
+        symptom.getAdditionalInfo().parentText = parent.getTextValue();
+        symptom.getAdditionalInfo().parentEntity = parent.getEntity();
+      } else {
+        unmatched.push(symptom);
+      }
     }
   } catch (err) {
     _iterator3.e(err);
   } finally {
     _iterator3.f();
+  }
+  var occurrences = [];
+  var _iterator4 = _createForOfIteratorHelper(combined.values()),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var contrib = _step4.value;
+      contrib.sort(function (a, b) {
+        return a.getDocIndex() - b.getDocIndex();
+      });
+      var reason = new Reason(contrib, "One or more non-boolean value is used where a boolean expression is expected.");
+      occurrences.push(new MisconceptionOccurrence(contrib[0].getLineNumber(), contrib[0].getDocIndex(), reason));
+    }
+    // for (let symptom of naturalLanguageOr) {
+    //     const reason = new Reason(
+    //         [symptom],
+    //         "A non-boolean value is used where a boolean expression is expected."
+    //     );
+    //     occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
+    // }
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
   }
   return occurrences;
 };
@@ -18808,11 +18857,11 @@ var comparisonWithBoolLiteral = function comparisonWithBoolLiteral(symptoms) {
     return s.getID() === _enums.SymptomType.CompareBoolLiteral.name;
   });
   var occurrences = [];
-  var _iterator4 = _createForOfIteratorHelper(compareBoolLiteral),
-    _step4;
+  var _iterator5 = _createForOfIteratorHelper(compareBoolLiteral),
+    _step5;
   try {
-    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-      var symptom = _step4.value;
+    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+      var symptom = _step5.value;
       var sJSON = symptom.toJSON();
       if (sJSON.boolLiteral === _constants.TRUE) {
         var reason = new Reason([symptom], "".concat(sJSON.boolValue, " is a boolean value so ").concat(sJSON.operator, " ").concat(sJSON.boolLiteral, " is redundant."));
@@ -18823,9 +18872,9 @@ var comparisonWithBoolLiteral = function comparisonWithBoolLiteral(symptoms) {
       }
     }
   } catch (err) {
-    _iterator4.e(err);
+    _iterator5.e(err);
   } finally {
-    _iterator4.f();
+    _iterator5.f();
   }
   return occurrences;
 };
@@ -18840,19 +18889,19 @@ var deferredReturn = function deferredReturn(symptoms) {
     return s.getID() === _enums.SymptomType.UnreachableExit.name && s.getAdditionalInfo().exitKeyword === _constants.RETURN_KEYWORD;
   });
   var occurrences = [];
-  var _iterator5 = _createForOfIteratorHelper(deferredReturns),
-    _step5;
+  var _iterator6 = _createForOfIteratorHelper(deferredReturns),
+    _step6;
   try {
-    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
-      var symptom = _step5.value;
+    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+      var symptom = _step6.value;
       var sJSON = symptom.toJSON();
       var reason = new Reason([symptom], "Code follows a return statement in the same branch.");
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator5.e(err);
+    _iterator6.e(err);
   } finally {
-    _iterator5.f();
+    _iterator6.f();
   }
   return occurrences;
 };
@@ -18867,18 +18916,18 @@ var forLoopVarIsLocal = function forLoopVarIsLocal(symptoms) {
     return s.getID() === _enums.SymptomType.OverwrittenVariable.name && s.getAdditionalInfo().overwriteType === _constants.FOR_LOOP_VAR && s.getAdditionalInfo().overwriteValue !== _constants.SAME_VALUE;
   });
   var occurrences = [];
-  var _iterator6 = _createForOfIteratorHelper(forLoopOverwrite),
-    _step6;
+  var _iterator7 = _createForOfIteratorHelper(forLoopOverwrite),
+    _step7;
   try {
-    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
-      var symptom = _step6.value;
+    for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+      var symptom = _step7.value;
       var reason = new Reason([symptom], "The iterating variable ".concat(symptom.getAffectedText(), " is initialised before the loop. ").concat(symptom.getAdditionalInfo().overwriteValue === _constants.DIFFERENT_VALUE ? "The overwritten value is different from the value initialised by the loop" : "It could not be determined if the overwritten value is the same as the value initialised by the loop", "."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator6.e(err);
+    _iterator7.e(err);
   } finally {
-    _iterator6.f();
+    _iterator7.f();
   }
   return occurrences;
 };
@@ -18911,18 +18960,18 @@ var functionCallsNoParentheses = function functionCallsNoParentheses(symptoms, v
   if (varsWithFunctionNames.length === 0 || undefinedVar.length === 0 && functionVars.length === 0) {
     return occurrences;
   }
-  var _iterator7 = _createForOfIteratorHelper(varsWithFunctionNames),
-    _step7;
+  var _iterator8 = _createForOfIteratorHelper(varsWithFunctionNames),
+    _step8;
   try {
     var _loop = function _loop() {
-      var funcNameVar = _step7.value;
+      var funcNameVar = _step8.value;
       var name = funcNameVar.getAffectedText();
       var docIndex = funcNameVar.getDocIndex();
-      var _iterator8 = _createForOfIteratorHelper(undefinedVar),
-        _step8;
+      var _iterator9 = _createForOfIteratorHelper(undefinedVar),
+        _step9;
       try {
-        for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
-          var u = _step8.value;
+        for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+          var u = _step9.value;
           if (u.getAffectedText() === name && u.getDocIndex() === docIndex) {
             var matchingSubscripted = subscriptedNonSubscriptable.filter(function (s) {
               return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
@@ -18934,15 +18983,15 @@ var functionCallsNoParentheses = function functionCallsNoParentheses(symptoms, v
           }
         }
       } catch (err) {
-        _iterator8.e(err);
+        _iterator9.e(err);
       } finally {
-        _iterator8.f();
+        _iterator9.f();
       }
-      var _iterator9 = _createForOfIteratorHelper(functionVars),
-        _step9;
+      var _iterator10 = _createForOfIteratorHelper(functionVars),
+        _step10;
       try {
-        for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
-          var funcVar = _step9.value;
+        for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+          var funcVar = _step10.value;
           if (funcVar.getTextValue() === name && funcVar.getDocumentStartIndex() === docIndex) {
             var _matchingSubscripted = subscriptedNonSubscriptable.filter(function (s) {
               return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
@@ -18954,18 +19003,18 @@ var functionCallsNoParentheses = function functionCallsNoParentheses(symptoms, v
           }
         }
       } catch (err) {
-        _iterator9.e(err);
+        _iterator10.e(err);
       } finally {
-        _iterator9.f();
+        _iterator10.f();
       }
     };
-    for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+    for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
       _loop();
     }
   } catch (err) {
-    _iterator7.e(err);
+    _iterator8.e(err);
   } finally {
-    _iterator7.f();
+    _iterator8.f();
   }
   return occurrences;
 };
@@ -18983,18 +19032,18 @@ var functionCallsUseSquareBrackets = function functionCallsUseSquareBrackets(sym
     return s.getID() === _enums.SymptomType.VariableWithSameNameAsFunction.name;
   });
   var occurrences = [];
-  var _iterator10 = _createForOfIteratorHelper(subscriptedNonSubscriptable),
-    _step10;
+  var _iterator11 = _createForOfIteratorHelper(subscriptedNonSubscriptable),
+    _step11;
   try {
-    for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
-      var symptom = _step10.value;
+    for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
+      var symptom = _step11.value;
       var varName = symptom.getAdditionalInfo().varName;
       var docIndex = symptom.getDocIndex();
-      var _iterator11 = _createForOfIteratorHelper(varsWithFunctionNames),
-        _step11;
+      var _iterator12 = _createForOfIteratorHelper(varsWithFunctionNames),
+        _step12;
       try {
-        for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-          var pair = _step11.value;
+        for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+          var pair = _step12.value;
           if (pair.getAffectedText() === varName && pair.getDocIndex() === docIndex) {
             var varTypeMsg = symptom.getAdditionalInfo().isUndefined ? "undefined variable" : symptom.getAdditionalInfo().subscriptedType === "unknown data type" ? "variable with unknown data type" : "variable with ".concat(symptom.getAdditionalInfo().subscriptedType, " data type");
             var reason = new Reason([symptom, pair], "".concat(varName, " (").concat(varTypeMsg, ") has the same name as a function. ").concat(varName, " is subscripted, suggesting a mistake may have been made while calling a function of the same name. It is possible there is confusion about when to use square brackets versus parentheses."));
@@ -19002,15 +19051,15 @@ var functionCallsUseSquareBrackets = function functionCallsUseSquareBrackets(sym
           }
         }
       } catch (err) {
-        _iterator11.e(err);
+        _iterator12.e(err);
       } finally {
-        _iterator11.f();
+        _iterator12.f();
       }
     }
   } catch (err) {
-    _iterator10.e(err);
+    _iterator11.e(err);
   } finally {
-    _iterator10.f();
+    _iterator11.f();
   }
   return occurrences;
 };
@@ -19030,18 +19079,18 @@ var iterationRequiresTwoLoops = function iterationRequiresTwoLoops(symptoms) {
     return s.getID() === _enums.SymptomType.LoopVarNotModified.name;
   });
   var occurrences = [];
-  var _iterator12 = _createForOfIteratorHelper(intVarModifiedInFor),
-    _step12;
+  var _iterator13 = _createForOfIteratorHelper(intVarModifiedInFor),
+    _step13;
   try {
-    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-      var symptom = _step12.value;
+    for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+      var symptom = _step13.value;
       var name = symptom.getAffectedText();
       var blockId = symptom.getBlock();
-      var _iterator13 = _createForOfIteratorHelper(loopVarNotModified),
-        _step13;
+      var _iterator14 = _createForOfIteratorHelper(loopVarNotModified),
+        _step14;
       try {
-        for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
-          var notMod = _step13.value;
+        for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+          var notMod = _step14.value;
           if (notMod.getBlock() === blockId && notMod.getAdditionalInfo().unmodifiedVars.includes(name)) {
             var reason = new Reason([symptom, notMod], "The int variable ".concat(name, " is referenced in a while loop condition but only modified in a nested for loop. If ").concat(name, " is being used to count the iterated items, the two loops could be replaced with a single for loop using enumerate() or range() to count the items."));
             occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
@@ -19049,15 +19098,15 @@ var iterationRequiresTwoLoops = function iterationRequiresTwoLoops(symptoms) {
           }
         }
       } catch (err) {
-        _iterator13.e(err);
+        _iterator14.e(err);
       } finally {
-        _iterator13.f();
+        _iterator14.f();
       }
     }
   } catch (err) {
-    _iterator12.e(err);
+    _iterator13.e(err);
   } finally {
-    _iterator12.f();
+    _iterator13.f();
   }
   return occurrences;
 };
@@ -19072,18 +19121,18 @@ var iteratorInitialisedOutsideLoop = function iteratorInitialisedOutsideLoop(sym
     return s.getID() === _enums.SymptomType.OverwrittenVariable.name && s.getAdditionalInfo().overwriteType === _constants.FOR_LOOP_VAR && s.getAdditionalInfo().overwriteValue === _constants.SAME_VALUE;
   });
   var occurrences = [];
-  var _iterator14 = _createForOfIteratorHelper(forLoopOverwrite),
-    _step14;
+  var _iterator15 = _createForOfIteratorHelper(forLoopOverwrite),
+    _step15;
   try {
-    for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
-      var symptom = _step14.value;
+    for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+      var symptom = _step15.value;
       var reason = new Reason([symptom], "The iterating variable ".concat(symptom.getAffectedText(), " is initialised before the loop with the same value that it is initialised with in the for loop definition."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator14.e(err);
+    _iterator15.e(err);
   } finally {
-    _iterator14.f();
+    _iterator15.f();
   }
   return occurrences;
 };
@@ -19100,11 +19149,11 @@ var localVariablesAreGlobal = function localVariablesAreGlobal(symptoms, variabl
   });
   // Check for other variables with same name and different scope
   var occurrences = [];
-  var _iterator15 = _createForOfIteratorHelper(undefinedVars),
-    _step15;
+  var _iterator16 = _createForOfIteratorHelper(undefinedVars),
+    _step16;
   try {
-    for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
-      var symptom = _step15.value;
+    for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
+      var symptom = _step16.value;
       var varName = symptom.getAdditionalInfo().variable.getName();
       var localVars = variables.get(varName).filter(function (instance) {
         return instance.getScope().getBlockEntity() !== _enums.ExpressionEntity.DocumentDefinition;
@@ -19115,9 +19164,9 @@ var localVariablesAreGlobal = function localVariablesAreGlobal(symptoms, variabl
       }
     }
   } catch (err) {
-    _iterator15.e(err);
+    _iterator16.e(err);
   } finally {
-    _iterator15.f();
+    _iterator16.f();
   }
   return occurrences;
 };
@@ -19132,11 +19181,11 @@ var loopCounter = function loopCounter(symptoms) {
     return s.getID() === _enums.SymptomType.ForLoopIteratorModified.name || s.getID() === _enums.SymptomType.WhileLoopVarAssignedIntLiteral.name;
   });
   var occurrences = [];
-  var _iterator16 = _createForOfIteratorHelper(dodgyMod),
-    _step16;
+  var _iterator17 = _createForOfIteratorHelper(dodgyMod),
+    _step17;
   try {
-    for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
-      var symptom = _step16.value;
+    for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
+      var symptom = _step17.value;
       var msg = "";
       if (symptom.getID() === _enums.SymptomType.ForLoopIteratorModified.name) {
         msg = "The for loop iterator variable ".concat(symptom.getAffectedText(), " is modified in the loop.");
@@ -19147,9 +19196,9 @@ var loopCounter = function loopCounter(symptoms) {
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator16.e(err);
+    _iterator17.e(err);
   } finally {
-    _iterator16.f();
+    _iterator17.f();
   }
   return occurrences;
 };
@@ -19164,11 +19213,11 @@ var mapToBooleanWithIf = function mapToBooleanWithIf(symptoms) {
     return s.getID() === _enums.SymptomType.OneLineConditional.name;
   });
   var occurrences = [];
-  var _iterator17 = _createForOfIteratorHelper(oneLineConditional),
-    _step17;
+  var _iterator18 = _createForOfIteratorHelper(oneLineConditional),
+    _step18;
   try {
-    for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
-      var symptom = _step17.value;
+    for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
+      var symptom = _step18.value;
       var sJSON = symptom.toJSON();
       if (sJSON.form === _constants.VALUE_RETURNED) {
         var reason = new Reason([symptom], "Conditional returns a boolean literal that matches the value of the boolean expression in the if statement. The whole conditional could be replaced with a single line.");
@@ -19179,9 +19228,9 @@ var mapToBooleanWithIf = function mapToBooleanWithIf(symptoms) {
       }
     }
   } catch (err) {
-    _iterator17.e(err);
+    _iterator18.e(err);
   } finally {
-    _iterator17.f();
+    _iterator18.f();
   }
   return occurrences;
 };
@@ -19196,18 +19245,18 @@ var mapToBooleanWithTernary = function mapToBooleanWithTernary(symptoms) {
     return s.getID() === _enums.SymptomType.TernaryReturnsBool.name;
   });
   var occurrences = [];
-  var _iterator18 = _createForOfIteratorHelper(boolTernary),
-    _step18;
+  var _iterator19 = _createForOfIteratorHelper(boolTernary),
+    _step19;
   try {
-    for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
-      var symptom = _step18.value;
+    for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+      var symptom = _step19.value;
       var reason = new Reason([symptom], "Ternary returns a boolean literal that matches the value of the boolean expression in the ternary. The ternary could be replaced with the boolean expression alone.");
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator18.e(err);
+    _iterator19.e(err);
   } finally {
-    _iterator18.f();
+    _iterator19.f();
   }
   return occurrences;
 };
@@ -19225,11 +19274,11 @@ var noKeyword = function noKeyword(symptoms) {
     return s.getID() === _enums.SymptomType.UnknownFunction.name;
   });
   var occurrences = [];
-  var _iterator19 = _createForOfIteratorHelper(unexpectedColon),
-    _step19;
+  var _iterator20 = _createForOfIteratorHelper(unexpectedColon),
+    _step20;
   try {
     var _loop2 = function _loop2() {
-      var symptom = _step19.value;
+      var symptom = _step20.value;
       if (symptom.getAdditionalInfo().before.type === _enums.ExpressionEntity.FunctionName.name) {
         var matchFunc = unknownFunctions.filter(function (s) {
           return s.getAffectedText() === symptom.getAdditionalInfo().before.value;
@@ -19243,13 +19292,13 @@ var noKeyword = function noKeyword(symptoms) {
         occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason4));
       }
     };
-    for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+    for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
       _loop2();
     }
   } catch (err) {
-    _iterator19.e(err);
+    _iterator20.e(err);
   } finally {
-    _iterator19.f();
+    _iterator20.f();
   }
   return occurrences;
 };
@@ -19267,31 +19316,31 @@ var noReservedWords = function noReservedWords(symptoms) {
     return s.getID() === _enums.SymptomType.ReservedWordAssigned.name;
   });
   var occurrences = [];
-  var _iterator20 = _createForOfIteratorHelper(definedReserved),
-    _step20;
-  try {
-    for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
-      var symptom = _step20.value;
-      var reason = new Reason([symptom], "The reserved word, ".concat(symptom.getAdditionalInfo().reservedWord, ", follows the ").concat(symptom.getAdditionalInfo().definitionType, "."));
-      occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
-    }
-  } catch (err) {
-    _iterator20.e(err);
-  } finally {
-    _iterator20.f();
-  }
-  var _iterator21 = _createForOfIteratorHelper(reservedAssigned),
+  var _iterator21 = _createForOfIteratorHelper(definedReserved),
     _step21;
   try {
     for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
-      var _symptom = _step21.value;
-      var _reason5 = new Reason([_symptom], "The reserved word, ".concat(_symptom.getAffectedText(), ", is followed by the assignment operator."));
-      occurrences.push(new MisconceptionOccurrence(_symptom.getLineNumber(), _symptom.getDocIndex(), _reason5));
+      var symptom = _step21.value;
+      var reason = new Reason([symptom], "The reserved word, ".concat(symptom.getAdditionalInfo().reservedWord, ", follows the ").concat(symptom.getAdditionalInfo().definitionType, "."));
+      occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
     _iterator21.e(err);
   } finally {
     _iterator21.f();
+  }
+  var _iterator22 = _createForOfIteratorHelper(reservedAssigned),
+    _step22;
+  try {
+    for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+      var _symptom = _step22.value;
+      var _reason5 = new Reason([_symptom], "The reserved word, ".concat(_symptom.getAffectedText(), ", is followed by the assignment operator."));
+      occurrences.push(new MisconceptionOccurrence(_symptom.getLineNumber(), _symptom.getDocIndex(), _reason5));
+    }
+  } catch (err) {
+    _iterator22.e(err);
+  } finally {
+    _iterator22.f();
   }
   return occurrences;
 };
@@ -19324,18 +19373,18 @@ var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms, var
   if (varsWithFunctionNames.length === 0 || undefinedVar.length === 0 && functionVars.length === 0) {
     return occurrences;
   }
-  var _iterator22 = _createForOfIteratorHelper(varsWithFunctionNames),
-    _step22;
+  var _iterator23 = _createForOfIteratorHelper(varsWithFunctionNames),
+    _step23;
   try {
     var _loop3 = function _loop3() {
-      var funcNameVar = _step22.value;
+      var funcNameVar = _step23.value;
       var name = funcNameVar.getAffectedText();
       var docIndex = funcNameVar.getDocIndex();
-      var _iterator23 = _createForOfIteratorHelper(undefinedVar),
-        _step23;
+      var _iterator24 = _createForOfIteratorHelper(undefinedVar),
+        _step24;
       try {
-        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
-          var u = _step23.value;
+        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
+          var u = _step24.value;
           if (u.getAffectedText() === name && u.getDocIndex() === docIndex) {
             var matchingSubscripted = subscriptedNonSubscriptable.filter(function (s) {
               return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
@@ -19347,15 +19396,15 @@ var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms, var
           }
         }
       } catch (err) {
-        _iterator23.e(err);
+        _iterator24.e(err);
       } finally {
-        _iterator23.f();
+        _iterator24.f();
       }
-      var _iterator24 = _createForOfIteratorHelper(functionVars),
-        _step24;
+      var _iterator25 = _createForOfIteratorHelper(functionVars),
+        _step25;
       try {
-        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
-          var funcVar = _step24.value;
+        for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
+          var funcVar = _step25.value;
           if (funcVar.getTextValue() === name && funcVar.getDocumentStartIndex() === docIndex) {
             var _matchingSubscripted2 = subscriptedNonSubscriptable.filter(function (s) {
               return s.getAdditionalInfo().varName === name && s.getDocIndex() === docIndex;
@@ -19367,18 +19416,18 @@ var parenthesesOnlyIfArgument = function parenthesesOnlyIfArgument(symptoms, var
           }
         }
       } catch (err) {
-        _iterator24.e(err);
+        _iterator25.e(err);
       } finally {
-        _iterator24.f();
+        _iterator25.f();
       }
     };
-    for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+    for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
       _loop3();
     }
   } catch (err) {
-    _iterator22.e(err);
+    _iterator23.e(err);
   } finally {
-    _iterator22.f();
+    _iterator23.f();
   }
   return occurrences;
 };
@@ -19400,11 +19449,11 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
   });
   var occurrences = [];
   // Assigning things that print but don't return
-  var _iterator25 = _createForOfIteratorHelper(assignedNone),
-    _step25;
+  var _iterator26 = _createForOfIteratorHelper(assignedNone),
+    _step26;
   try {
-    for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
-      var symptom = _step25.value;
+    for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
+      var symptom = _step26.value;
       var sJSON = symptom.toJSON();
       if (sJSON.expressionNoValue.type === _constants.USER_DEFINED_FUNCTION) {
         (function () {
@@ -19427,15 +19476,15 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
     }
     // Not assigning things that print AND return
   } catch (err) {
-    _iterator25.e(err);
+    _iterator26.e(err);
   } finally {
-    _iterator25.f();
+    _iterator26.f();
   }
-  var _iterator26 = _createForOfIteratorHelper(unusedReturn),
-    _step26;
+  var _iterator27 = _createForOfIteratorHelper(unusedReturn),
+    _step27;
   try {
     var _loop4 = function _loop4() {
-      var symptom = _step26.value;
+      var symptom = _step27.value;
       var sJSON = symptom.toJSON();
       var funcName = sJSON.unusedFunc.value;
       var funcPrints = functionPrints.filter(function (func) {
@@ -19448,13 +19497,13 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
         occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason7));
       }
     };
-    for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
+    for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
       _loop4();
     }
   } catch (err) {
-    _iterator26.e(err);
+    _iterator27.e(err);
   } finally {
-    _iterator26.f();
+    _iterator27.f();
   }
   return occurrences;
 };
@@ -19486,16 +19535,16 @@ var sequentialIfsAreExclusive = function sequentialIfsAreExclusive(symptoms) {
     return s.getID() === _enums.SymptomType.SequentialIfs.name && s.getAdditionalInfo().branchMatches.length > 0;
   });
   var occurrences = [];
-  var _iterator27 = _createForOfIteratorHelper(sequentialIfsWithMatches),
-    _step27;
+  var _iterator28 = _createForOfIteratorHelper(sequentialIfsWithMatches),
+    _step28;
   try {
-    for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
-      var conditional = _step27.value;
-      var _iterator28 = _createForOfIteratorHelper(conditional.getAdditionalInfo().branchMatches),
-        _step28;
+    for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
+      var conditional = _step28.value;
+      var _iterator29 = _createForOfIteratorHelper(conditional.getAdditionalInfo().branchMatches),
+        _step29;
       try {
-        for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
-          var sequence = _step28.value;
+        for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
+          var sequence = _step29.value;
           var sequenceTxt = sequence.map(function (b) {
             return b.lineNum + 1;
           }).join(", ");
@@ -19513,15 +19562,15 @@ var sequentialIfsAreExclusive = function sequentialIfsAreExclusive(symptoms) {
           }*/
         }
       } catch (err) {
-        _iterator28.e(err);
+        _iterator29.e(err);
       } finally {
-        _iterator28.f();
+        _iterator29.f();
       }
     }
   } catch (err) {
-    _iterator27.e(err);
+    _iterator28.e(err);
   } finally {
-    _iterator27.f();
+    _iterator28.f();
   }
   return occurrences;
 };
@@ -19541,18 +19590,18 @@ var parameterMustBeAssignedInFunction = function parameterMustBeAssignedInFuncti
     return s.getID() === _enums.SymptomType.OverwrittenVariable.name && s.getAdditionalInfo().isParameter && s.getAdditionalInfo().prevUsageIsDefinition && !assignInReturnLines.has(s.getLineNumber());
   });
   var occurrences = [];
-  var _iterator29 = _createForOfIteratorHelper(variableOverwrite),
-    _step29;
+  var _iterator30 = _createForOfIteratorHelper(variableOverwrite),
+    _step30;
   try {
-    for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
-      var symptom = _step29.value;
+    for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
+      var symptom = _step30.value;
       var reason = new Reason([symptom], "The parameter ".concat(symptom.getAffectedText(), " is overwritten before use."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator29.e(err);
+    _iterator30.e(err);
   } finally {
-    _iterator29.f();
+    _iterator30.f();
   }
   return occurrences;
 };
@@ -19567,18 +19616,18 @@ var stringMethodsModifyTheString = function stringMethodsModifyTheString(symptom
     return s.getID() === _enums.SymptomType.UnusedReturn.name && s.getAdditionalInfo().expression.is(_enums.ExpressionCategory.BuiltInMethods) && _utils.stringMethodsLookup.has(s.getAdditionalInfo().expression.getEntity());
   });
   var occurrences = [];
-  var _iterator30 = _createForOfIteratorHelper(unusedMethodReturns),
-    _step30;
+  var _iterator31 = _createForOfIteratorHelper(unusedMethodReturns),
+    _step31;
   try {
-    for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
-      var symptom = _step30.value;
+    for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
+      var symptom = _step31.value;
       var reason = new Reason([symptom], "A String method, ".concat(symptom.getAdditionalInfo().expression.getTextValue(), ", that returns a new string is called but the return value is not assigned or passed."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator30.e(err);
+    _iterator31.e(err);
   } finally {
-    _iterator30.f();
+    _iterator31.f();
   }
   return occurrences;
 };
@@ -19593,18 +19642,18 @@ var typeConversionModifiesArgument = function typeConversionModifiesArgument(sym
     return s.getID() === _enums.SymptomType.UnusedReturn.name && s.getAdditionalInfo().expression.isOneOf([_enums.ExpressionEntity.StrFunction, _enums.ExpressionEntity.IntFunction, _enums.ExpressionEntity.FloatFunction, _enums.ExpressionEntity.BoolFunction, _enums.ExpressionEntity.ListFunction, _enums.ExpressionEntity.TupleFunction, _enums.ExpressionEntity.SetFunction]);
   });
   var occurrences = [];
-  var _iterator31 = _createForOfIteratorHelper(unusedTypeConversions),
-    _step31;
+  var _iterator32 = _createForOfIteratorHelper(unusedTypeConversions),
+    _step32;
   try {
-    for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
-      var symptom = _step31.value;
+    for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
+      var symptom = _step32.value;
       var reason = new Reason([symptom], "".concat(symptom.getAdditionalInfo().expression.getTextValue(), "() is called but the converted value returned by the function is not saved or passed."));
       occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator31.e(err);
+    _iterator32.e(err);
   } finally {
-    _iterator31.f();
+    _iterator32.f();
   }
   return occurrences;
 };
@@ -19625,11 +19674,11 @@ var whileSameAsIf = function whileSameAsIf(symptoms) {
     return s.getID() === _enums.SymptomType.LoopReturn.name;
   });
   var occurrences = [];
-  var _iterator32 = _createForOfIteratorHelper(whileVarNotModified),
-    _step32;
+  var _iterator33 = _createForOfIteratorHelper(whileVarNotModified),
+    _step33;
   try {
     var _loop5 = function _loop5() {
-      var notModified = _step32.value;
+      var notModified = _step33.value;
       var notModifiedEarlyExit = loopEarlyExit.filter(function (s) {
         return s.getBlock() === notModified.getBlock();
       });
@@ -19638,19 +19687,19 @@ var whileSameAsIf = function whileSameAsIf(symptoms) {
         occurrences.push(new MisconceptionOccurrence(notModified.getLineNumber(), notModified.getDocIndex(), reason));
       }
     };
-    for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
+    for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
       _loop5();
     }
   } catch (err) {
-    _iterator32.e(err);
+    _iterator33.e(err);
   } finally {
-    _iterator32.f();
+    _iterator33.f();
   }
-  var _iterator33 = _createForOfIteratorHelper(whileTrue),
-    _step33;
+  var _iterator34 = _createForOfIteratorHelper(whileTrue),
+    _step34;
   try {
     var _loop6 = function _loop6() {
-      var noVar = _step33.value;
+      var noVar = _step34.value;
       var noVarEarlyExit = loopEarlyExit.filter(function (s) {
         return s.getBlock() === noVar.getBlock();
       });
@@ -19659,13 +19708,13 @@ var whileSameAsIf = function whileSameAsIf(symptoms) {
         occurrences.push(new MisconceptionOccurrence(noVar.getLineNumber(), noVar.getDocIndex(), reason));
       }
     };
-    for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
+    for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
       _loop6();
     }
   } catch (err) {
-    _iterator33.e(err);
+    _iterator34.e(err);
   } finally {
-    _iterator33.f();
+    _iterator34.f();
   }
   return occurrences;
 };
@@ -19680,11 +19729,11 @@ var typeMustBeSpecified = function typeMustBeSpecified(symptoms) {
     return s.getID() === _enums.SymptomType.TypeUnnecessary.name;
   });
   var occurrences = [];
-  var _iterator34 = _createForOfIteratorHelper(typeUnnecessary),
-    _step34;
+  var _iterator35 = _createForOfIteratorHelper(typeUnnecessary),
+    _step35;
   try {
-    for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
-      var symptom = _step34.value;
+    for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
+      var symptom = _step35.value;
       var sJSON = symptom.toJSON();
       var reason = void 0;
       // string > list
@@ -19701,9 +19750,9 @@ var typeMustBeSpecified = function typeMustBeSpecified(symptoms) {
       if (reason !== undefined) occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
     }
   } catch (err) {
-    _iterator34.e(err);
+    _iterator35.e(err);
   } finally {
-    _iterator34.f();
+    _iterator35.f();
   }
   return occurrences;
 };
@@ -19777,30 +19826,30 @@ var Misconception = /*#__PURE__*/function () {
   }, {
     key: "isPresentInToken",
     value: function isPresentInToken(startIndex, endIndex) {
-      var _iterator35 = _createForOfIteratorHelper(_classPrivateFieldGet(this, _occurrences)),
-        _step35;
+      var _iterator36 = _createForOfIteratorHelper(_classPrivateFieldGet(this, _occurrences)),
+        _step36;
       try {
-        for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
-          var occurrence = _step35.value;
-          var _iterator36 = _createForOfIteratorHelper(occurrence.getReason().getContributingSymptoms()),
-            _step36;
+        for (_iterator36.s(); !(_step36 = _iterator36.n()).done;) {
+          var occurrence = _step36.value;
+          var _iterator37 = _createForOfIteratorHelper(occurrence.getReason().getContributingSymptoms()),
+            _step37;
           try {
-            for (_iterator36.s(); !(_step36 = _iterator36.n()).done;) {
-              var symptom = _step36.value;
+            for (_iterator37.s(); !(_step37 = _iterator37.n()).done;) {
+              var symptom = _step37.value;
               if (startIndex <= symptom.getDocIndex() && endIndex >= symptom.getDocIndex()) {
                 return true;
               }
             }
           } catch (err) {
-            _iterator36.e(err);
+            _iterator37.e(err);
           } finally {
-            _iterator36.f();
+            _iterator37.f();
           }
         }
       } catch (err) {
-        _iterator35.e(err);
+        _iterator36.e(err);
       } finally {
-        _iterator35.f();
+        _iterator36.f();
       }
       return false;
     }
@@ -19980,7 +20029,7 @@ var Reason = /*#__PURE__*/function () {
 exports.Reason = Reason;
 var misconceptionDetector = new Map([[_enums.MisconceptionType.PrintSameAsReturn, printSameAsReturn], [_enums.MisconceptionType.MapToBooleanWithIf, mapToBooleanWithIf], [_enums.MisconceptionType.ComparisonWithBoolLiteral, comparisonWithBoolLiteral], [_enums.MisconceptionType.DeferredReturn, deferredReturn], [_enums.MisconceptionType.TypeMustBeSpecified, typeMustBeSpecified], [_enums.MisconceptionType.CompareMultipleValuesWithOr, compareMultipleValuesWithOr], [_enums.MisconceptionType.ParenthesesOnlyIfArgument, parenthesesOnlyIfArgument], [_enums.MisconceptionType.FunctionCallsUseSquareBrackets, functionCallsUseSquareBrackets], [_enums.MisconceptionType.FunctionCallsNoParentheses, functionCallsNoParentheses], [_enums.MisconceptionType.AssignCompares, assignCompares], [_enums.MisconceptionType.ReturnCall, returnCall], [_enums.MisconceptionType.SequentialIfsAreExclusive, sequentialIfsAreExclusive], [_enums.MisconceptionType.WhileSameAsIf, whileSameAsIf], [_enums.MisconceptionType.IterationRequiresTwoLoops, iterationRequiresTwoLoops], [_enums.MisconceptionType.StringMethodsModifyTheString, stringMethodsModifyTheString], [_enums.MisconceptionType.TypeConversionModifiesArgument, typeConversionModifiesArgument], [_enums.MisconceptionType.MapToBooleanWithTernaryOperator, mapToBooleanWithTernary], [_enums.MisconceptionType.NoReservedWords, noReservedWords], [_enums.MisconceptionType.ParameterMustBeAssignedInFunction, parameterMustBeAssignedInFunction], [_enums.MisconceptionType.LocalVariablesAreGlobal, localVariablesAreGlobal], [_enums.MisconceptionType.IteratorInitialisedOutsideLoop, iteratorInitialisedOutsideLoop], [_enums.MisconceptionType.ForLoopVarIsLocal, forLoopVarIsLocal], [_enums.MisconceptionType.LoopCounter, loopCounter], [_enums.MisconceptionType.NoKeyword, noKeyword], [_enums.MisconceptionType.ColonAssigns, colonAssigns] //25
 ]);
-},{"../doc-model/enums.js":5,"../utils/constants.js":14,"../utils/utils.js":15,"./symptom.js":13}],13:[function(require,module,exports){
+},{"../doc-model/ast.js":2,"../doc-model/enums.js":5,"../utils/constants.js":14,"../utils/utils.js":15,"./symptom.js":13}],13:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -20468,6 +20517,18 @@ var SymptomNaturalLanguageBoolean = /*#__PURE__*/function (_Symptom9) {
       }
       if (additionalInfo.hasOwnProperty("valueType")) {
         obj.valueType = additionalInfo.valueType.name;
+      }
+      if (additionalInfo.hasOwnProperty("valueText")) {
+        obj.valueText = additionalInfo.valueText;
+      }
+      if (additionalInfo.hasOwnProperty("valueEntity")) {
+        obj.valueEntity = additionalInfo.valueEntity.name;
+      }
+      if (additionalInfo.hasOwnProperty("parentText")) {
+        obj.parentText = additionalInfo.parentText;
+      }
+      if (additionalInfo.hasOwnProperty("parentEntity")) {
+        obj.parentEntity = additionalInfo.parentEntity.name;
       }
       return obj;
     }

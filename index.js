@@ -15,6 +15,7 @@ app.get('/parse', async (req, res) => {
             res.status(400).json({error: `Missing required parameter, pythonStr, which should be Python source code in string format.`});
         }
         else {
+            console.log("processing request")
             const showTree = req.query.showTree && req.query.showTree == "true"
             const result = SIDElib.parse(pythonStr, showTree);
             res.json(result);

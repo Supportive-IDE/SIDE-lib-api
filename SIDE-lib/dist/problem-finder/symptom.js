@@ -486,6 +486,18 @@ var SymptomNaturalLanguageBoolean = /*#__PURE__*/function (_Symptom9) {
       if (additionalInfo.hasOwnProperty("valueType")) {
         obj.valueType = additionalInfo.valueType.name;
       }
+      if (additionalInfo.hasOwnProperty("valueText")) {
+        obj.valueText = additionalInfo.valueText;
+      }
+      if (additionalInfo.hasOwnProperty("valueEntity")) {
+        obj.valueEntity = additionalInfo.valueEntity.name;
+      }
+      if (additionalInfo.hasOwnProperty("parentText")) {
+        obj.parentText = additionalInfo.parentText;
+      }
+      if (additionalInfo.hasOwnProperty("parentEntity")) {
+        obj.parentEntity = additionalInfo.parentEntity.name;
+      }
       return obj;
     }
   }]);
