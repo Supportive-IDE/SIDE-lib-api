@@ -498,6 +498,9 @@ var SymptomNaturalLanguageBoolean = /*#__PURE__*/function (_Symptom9) {
       if (additionalInfo.hasOwnProperty("parentEntity")) {
         obj.parentEntity = additionalInfo.parentEntity.name;
       }
+      if (additionalInfo.hasOwnProperty("completeBooleanExpression")) {
+        obj.completeBooleanExpression = additionalInfo.completeBooleanExpression;
+      }
       return obj;
     }
   }]);

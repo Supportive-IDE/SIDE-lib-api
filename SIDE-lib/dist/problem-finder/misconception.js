@@ -120,9 +120,11 @@ var compareMultipleValuesWithOr = function compareMultipleValuesWithOr(symptoms)
     for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
       var symptom = _step3.value;
       var parent = void 0;
+      var highestBooleanExp = symptom.getAdditionalInfo().tempExpression.is(_enums.ExpressionEntity.BooleanExpression) ? symptom.getAdditionalInfo().tempExpression : undefined;
       try {
         parent = symptom.getAdditionalInfo().tempExpression.getParent();
         while (parent.is(_enums.ExpressionEntity.BooleanExpression)) {
+          highestBooleanExp = parent;
           parent = parent.getParent();
         }
       } catch (e) {
@@ -135,6 +137,9 @@ var compareMultipleValuesWithOr = function compareMultipleValuesWithOr(symptoms)
         combined.get(parent).push(symptom);
         symptom.getAdditionalInfo().parentText = parent.getTextValue();
         symptom.getAdditionalInfo().parentEntity = parent.getEntity();
+        if (highestBooleanExp) {
+          symptom.getAdditionalInfo().completeBooleanExpression = highestBooleanExp.getTextValue();
+        }
       } else {
         unmatched.push(symptom);
       }
