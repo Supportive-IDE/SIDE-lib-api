@@ -480,6 +480,15 @@ var SymptomNaturalLanguageBoolean = /*#__PURE__*/function (_Symptom9) {
       if (additionalInfo.hasOwnProperty("form")) {
         obj.form = additionalInfo.form;
       }
+      if (additionalInfo.hasOwnProperty("leftSideType")) {
+        obj.leftSideType = additionalInfo.leftSideType.name;
+      }
+      if (additionalInfo.hasOwnProperty("leftSideText")) {
+        obj.leftSideText = additionalInfo.leftSideText;
+      }
+      if (additionalInfo.hasOwnProperty("leftSideEntity")) {
+        obj.leftSideEntity = additionalInfo.leftSideEntity.name;
+      }
       if (additionalInfo.hasOwnProperty("operator")) {
         obj.operator = additionalInfo.operator;
       }

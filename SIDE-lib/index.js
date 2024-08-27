@@ -8472,14 +8472,28 @@ function _checkNaturalLanguage2(exp) {
         tempExpression: exp
       }));
     } else if (compType !== _enums.DataType.Bool && compType !== _enums.DataType.Unknown) {
-      symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
-        form: _constants.OR_NON_BOOL,
-        operator: children[1].getTextValue(),
-        valueType: children[2].getDataType(),
-        valueText: children[2].getTextValue(),
-        valueEntity: children[2].getEntity(),
-        tempExpression: exp
-      }));
+      if (children[0].isOneOf([_enums.ExpressionEntity.BooleanExpression, _enums.ExpressionEntity.ComparisonExpression])) {
+        symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 1, 2, {
+          form: _constants.OR_NON_BOOL,
+          operator: children[1].getTextValue(),
+          valueType: children[2].getDataType(),
+          valueText: children[2].getTextValue(),
+          valueEntity: children[2].getEntity(),
+          tempExpression: exp
+        }));
+      } else {
+        symptoms.push(_symptom.SymptomFinder.createStatementSymptom(_enums.SymptomType.NaturalLanguageBoolean, children, 0, 2, {
+          form: _constants.OR_NON_BOOL,
+          leftSideType: children[0].getDataType(),
+          leftSideText: children[0].getTextValue(),
+          leftSideEntity: children[0].getEntity(),
+          operator: children[1].getTextValue(),
+          valueType: children[2].getDataType(),
+          valueText: children[2].getTextValue(),
+          valueEntity: children[2].getEntity(),
+          tempExpression: exp
+        }));
+      }
     }
   }
   return symptoms;
@@ -20516,6 +20530,15 @@ var SymptomNaturalLanguageBoolean = /*#__PURE__*/function (_Symptom9) {
       var additionalInfo = this.getAdditionalInfo();
       if (additionalInfo.hasOwnProperty("form")) {
         obj.form = additionalInfo.form;
+      }
+      if (additionalInfo.hasOwnProperty("leftSideType")) {
+        obj.leftSideType = additionalInfo.leftSideType.name;
+      }
+      if (additionalInfo.hasOwnProperty("leftSideText")) {
+        obj.leftSideText = additionalInfo.leftSideText;
+      }
+      if (additionalInfo.hasOwnProperty("leftSideEntity")) {
+        obj.leftSideEntity = additionalInfo.leftSideEntity.name;
       }
       if (additionalInfo.hasOwnProperty("operator")) {
         obj.operator = additionalInfo.operator;
