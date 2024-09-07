@@ -3113,7 +3113,13 @@ var PropertyCallNode = /*#__PURE__*/function (_MultiPartExpressionN6) {
     value: function setDataType(dataType) {
       if (dataType !== this.getDataType() || dataType !== _classPrivateFieldGet(this, _property).getDataType()) {
         _get(_getPrototypeOf(PropertyCallNode.prototype), "setDataType", this).call(this, dataType);
-        if (!_classPrivateFieldGet(this, _property).is(_enums.ExpressionCategory.ModuleProperties)) _classPrivateFieldGet(this, _property).setDataType(dataType);
+        if (!_classPrivateFieldGet(this, _property).is(_enums.ExpressionCategory.ModuleProperties)) {
+          try {
+            _classPrivateFieldGet(this, _property).setDataType(dataType);
+          } catch (error) {
+            console.log("Couldn't set property type of", _classPrivateFieldGet(this, _property).getEntity().name, ". Expected a property.");
+          }
+        }
       }
     }
 

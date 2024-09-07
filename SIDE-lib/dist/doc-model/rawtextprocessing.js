@@ -2033,6 +2033,13 @@ function _combinePropertyCalls(expressions) {
       var newExp = new _ast.PropertyCallNode(newTextValue, [expressions[i - 1], expressions[i], expressions[i + 1]], _enums.ExpressionEntity.PropertyCallExpression, _enums.ExpressionCategory.MultipartValue);
       expressions = expressions.slice(0, i - 1).concat([newExp], expressions.slice(i + 2));
       i--;
+    }
+    // Special case where a the property name has not been identified as such (e.g. when method is called without parentheses)
+    else if (expressions[i].is(_enums.ExpressionEntity.Dot) && !expressions[i + 1].isOneOf([_enums.ExpressionEntity.PropertyName, _enums.ExpressionCategory.ModuleProperties]) && (i + 2 >= expressions.length || !expressions[i + 2].isOneOf([_enums.ExpressionEntity.OpenParenthesis]))) {
+      var _newTextValue = (0, _utils.getTextOfExpressions)([expressions[i - 1], expressions[i], expressions[i + 1]]);
+      var _newExp = new _ast.PropertyCallNode(_newTextValue, [expressions[i - 1], expressions[i], expressions[i + 1]], _enums.ExpressionEntity.PropertyCallExpression, _enums.ExpressionCategory.MultipartValue);
+      expressions = expressions.slice(0, i - 1).concat([_newExp], expressions.slice(i + 2));
+      i--;
     } else {
       i++;
     }
