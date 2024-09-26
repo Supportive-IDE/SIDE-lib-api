@@ -19498,8 +19498,10 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
             // Create a misconception occurrence
             var reason = new Reason([symptom].concat(_toConsumableArray(funcUsed)), "User-defined function ".concat(funcName, " prints to the console but does not return a value."));
             occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), reason));
+          } else {
+            var _reason7 = new Reason([symptom], "User-defined function ".concat(funcName, " does not return a value but it is used as if it does."));
+            occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason7));
           }
-          ;
         })();
       } else if (sJSON.expressionNoValue.type === _constants.BUILT_IN_FUNCTION && sJSON.expressionNoValue.value.indexOf("print(") === 0) {
         var reason = new Reason([symptom], "The print function does not return a value but it is used as if it does.");
@@ -19525,11 +19527,11 @@ var printSameAsReturn = function printSameAsReturn(symptoms) {
       var funcDoesPrint = funcPrints.length > 0;
       if (funcDoesPrint) {
         // Create a misconception occurrence
-        var _reason7 = new Reason([symptom].concat(_toConsumableArray(funcPrints)), "User-defined function ".concat(funcName, " prints to the console and returns a value but the value is not used."));
-        occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason7));
-      } else {
-        var _reason8 = new Reason([symptom], "User-defined function ".concat(funcName, " returns a value but the value is not used."));
+        var _reason8 = new Reason([symptom].concat(_toConsumableArray(funcPrints)), "User-defined function ".concat(funcName, " prints to the console and returns a value but the value is not used."));
         occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason8));
+      } else {
+        var _reason9 = new Reason([symptom], "User-defined function ".concat(funcName, " returns a value but the value is not used."));
+        occurrences.push(new MisconceptionOccurrence(symptom.getLineNumber(), symptom.getDocIndex(), _reason9));
       }
     };
     for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
@@ -19925,7 +19927,7 @@ var Misconception = /*#__PURE__*/function () {
 exports.Misconception = Misconception;
 var _line = /*#__PURE__*/new WeakMap();
 var _docIndex = /*#__PURE__*/new WeakMap();
-var _reason9 = /*#__PURE__*/new WeakMap();
+var _reason10 = /*#__PURE__*/new WeakMap();
 var MisconceptionOccurrence = /*#__PURE__*/function () {
   /** @type {Number} */
   // The document line number
@@ -19950,13 +19952,13 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
       writable: true,
       value: void 0
     });
-    _classPrivateFieldInitSpec(this, _reason9, {
+    _classPrivateFieldInitSpec(this, _reason10, {
       writable: true,
       value: void 0
     });
     _classPrivateFieldSet(this, _line, line);
     _classPrivateFieldSet(this, _docIndex, docIndex);
-    _classPrivateFieldSet(this, _reason9, reason);
+    _classPrivateFieldSet(this, _reason10, reason);
   }
 
   /**
@@ -19986,7 +19988,7 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
   }, {
     key: "getReason",
     value: function getReason() {
-      return _classPrivateFieldGet(this, _reason9);
+      return _classPrivateFieldGet(this, _reason10);
     }
 
     /**
@@ -19999,7 +20001,7 @@ var MisconceptionOccurrence = /*#__PURE__*/function () {
       return {
         line: _classPrivateFieldGet(this, _line),
         docIndex: _classPrivateFieldGet(this, _docIndex),
-        reason: _classPrivateFieldGet(this, _reason9).toJSON()
+        reason: _classPrivateFieldGet(this, _reason10).toJSON()
       };
     }
   }]);
